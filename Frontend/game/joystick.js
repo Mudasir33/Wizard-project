@@ -77,6 +77,15 @@ export class joystick{
         }
 
 
+        
+        drawtext(context, joystick){  // visar vad x och y ligger i joysticken
+                                        // x led: vänster:-1, centrum: 0, höger: 1
+                                        // y led: top: -1, centrum: 0, nere: 1
+            context.font ="20px Arial";
+            context.fillText("x:" + joystick.dx.toFixed(4)+ "y:"+ joystick.dy.toFixed(4), joystick.X - joystick.R -20 , joystick.Y - joystick.R -20 ) ;
+       
+        }
+
 
 
 
