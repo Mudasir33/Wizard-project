@@ -1,0 +1,26 @@
+{
+  "name": "wizard-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mudasir33/Wizard-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Mudasir33/Wizard-project/issues"
+  },
+  "homepage": "https://github.com/Mudasir33/Wizard-project#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "tmx-parser": "^1.5.0"
+  }
+}
