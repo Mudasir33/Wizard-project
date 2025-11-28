@@ -3,24 +3,21 @@ export class Spell {
         this.x = x;
         this.y = y;
 
-        this.speed = type.speed;
+        this.speed  = type.speed;
         this.damage = type.damage;
+        this.size   = type.size;
 
-        const len = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+        const len = Math.hypot(direction.x, direction.y);
         this.dx = direction.x / len;
         this.dy = direction.y / len;
-
-        this.size = type.size || 40;
 
         this.sprite = new Image();
         this.sprite.src = type.texture;
     }
-
     update() {
         this.x += this.dx * this.speed;
         this.y += this.dy * this.speed;
     }
-
     draw(context) {
         context.drawImage(
             this.sprite,
@@ -34,7 +31,7 @@ export class Spell {
 
 export const spell_list = {
     fireball: {
-        texture: "./fireball.gif",
+        texture: "../Assets/Spells/fireball.gif",
         speed: 6,
         damage: 12,
         size: 40
