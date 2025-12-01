@@ -35,7 +35,7 @@ async function mapCreation(){
         
        
         for (let x =0 ; x < width; x++){
-            grid[y][x]= map.layers[6].tiles[y * width + x];
+            grid[y][x]= map.layers[0].tiles[y * width + x];
         }
         
     }
