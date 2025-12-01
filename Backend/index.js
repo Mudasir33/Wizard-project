@@ -36,15 +36,18 @@ function loop() {
   const height = grid.length;
   const width  = grid[0].length;
   const tileWH = 16;
-  const tilesPerRow = (tilesetImage.width / 16);
-  
-    console.log("grid test:",  grid);
+  const tilesPerRow = ( tilesetImage.width/ 16);
+
+  console.log("grid test sx:",  (36 % tilesPerRow)*16); //y
+  console.log("grid test sy:",  Math.floor(36/tilesPerRow)*16);
+  console.log("tiledRow: ",tilesetImage.width/16 );
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const {id} = grid[y][x];
+      //console.log("id test;", id);  tar ut rätt id (måste va placeringen)
+      const sx=  (id % tilesPerRow)*16;
+      const sy = Math.floor(id/tilesPerRow)*16;
       
-      const sy = Math.floor(id/tilesPerRow)*6;
-      const sx= id % tilesPerRow*tileWH;
 
 
       

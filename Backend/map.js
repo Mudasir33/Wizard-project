@@ -39,7 +39,7 @@ async function mapCreation(){
         
     }
     
-    console.log(grid);
+    
      return { grid };
 }
 

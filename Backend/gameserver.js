@@ -33,7 +33,7 @@ async function startServer() {
     io.on("connection", socket =>{
             console.log("connected:", socket.id);
             io.emit("map", Map2d);
-            //console.log("test",Map2d);
+           
 
             const number = Object.values(players).includes(1) ? 2 : 1;
             
