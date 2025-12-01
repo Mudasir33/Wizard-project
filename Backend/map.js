@@ -18,14 +18,15 @@ async function mapCreation(){
     console.log("Tile size:", map.tileWidth, map.tileHeight);
     //console.log("first gid:", map.layers[1].tiles);
     console.log ("total layer", map.layers.length)
-    console.log("first gid:", map.tileSets[1].firstGid);
+    console.log("first gid:", map.tileSets[0].firstGid);
     console.log("tileset image:", map.tileSets[0].image.source);
   
     
     map.layers.forEach((layer, i) => {
-    //console.log(i, layer.type, layer.name);
+    console.log(i, layer.type, layer.name);
     });
-    
+
+
     const width = map.width;    // 50
     const height = map.height;  // 100
     const grid = [];  
@@ -34,7 +35,7 @@ async function mapCreation(){
         
        
         for (let x =0 ; x < width; x++){
-            grid[y][x]= map.layers[0].tiles[y * width + x];
+            grid[y][x]= map.layers[6].tiles[y * width + x];
         }
         
     }

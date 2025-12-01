@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="75">
- <tileset firstgid="1" source="../../../maps/Water_coasts_animation.tsx"/>
- <tileset firstgid="929" source="../../../maps/walls_floor.tsx"/>
- <tileset firstgid="1422" source="../../../maps/Objects.tsx"/>
- <tileset firstgid="1638" source="../../../maps/Assets_source.tsx"/>
+ <editorsettings>
+  <export target="../Wizard-project/Assets/maps/map1.tmx" format="tmx"/>
+ </editorsettings>
+ <tileset firstgid="1" source="Water_coasts_animation.tsx"/>
+ <tileset firstgid="929" source="walls_floor.tsx"/>
+ <tileset firstgid="1422" source="Objects.tsx"/>
+ <tileset firstgid="1638" source="Assets_source.tsx"/>
  <layer id="12" name="Tile Layer 6" width="50" height="50">
   <data encoding="csv">
 1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,1375,1376,
