@@ -116,6 +116,8 @@ export class joystick{
         if (!toucharea(px, py, analog)) {
                 analog.dx = 0;
                 analog.dy = 0;
+                analog.x = analog.X;
+                analog.y = analog.Y;
               return;
         }
            
