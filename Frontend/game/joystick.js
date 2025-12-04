@@ -1,11 +1,11 @@
 
 
-
 /*##########################################################################################
 Joystick fungerar: 
 för ny joystick: 
 
-let x = new joystick(x, y, r) när man har impoterat in den som joystick i ett atnnat program
+
+let x = new joystick(x, y, r)
 Tänk att yttre cirkeln är r*2
 
 
@@ -17,10 +17,7 @@ x.Eventen(x)
 x= postion i x led i canvas
 y = postion i y led i canvas
 r = radius för själva joysticken inre
-yttre cirkeln är r*2
-
-
-
+yttre cirkeln är R = r*2
 */
 
 
@@ -28,35 +25,32 @@ yttre cirkeln är r*2
 export class joystick{
     constructor(x,y,r){
         //intre
-        this.x = x;
+        this.x = x; // intre cirkeln, kordinater o storlek
         this.y = y; 
         this.r = r; 
 
         //yttre
-        this.X = x;  
+        this.X = x;   //yttre cirkeln, korinater o storlek
         this.Y = y; 
         this.R = r*2 
 
         this.dx = 0;
         this.dy = 0;
+        this.isPressed = false;
     
 
 
     }
        
         draw(context) {
-
-
-
-
             
            // yttre cireln
            context.save();
            context.beginPath();
            context.arc(this.X,this.Y,this.R, 0, Math.PI *2);   
-           context.lineWidth = 3; // bara linje runt färg
+           context.lineWidth = 3;
            context.stroke();        
-            // context.fillStyle ="lightgray";  hel cirkel färg
+            // context.fillStyle ="lightgray";
             //context.fill();
            context.restore();
 
@@ -70,41 +64,40 @@ export class joystick{
 
 
 
-
-
-
-
         }
 
 
-        
-        drawtext(context, joystick){  // visar vad x och y ligger i joysticken
+        drawtext(context){  // visar vad x och y ligger i joysticken
                                         // x led: vänster:-1, centrum: 0, höger: 1
                                         // y led: top: -1, centrum: 0, nere: 1
             context.font ="20px Arial";
-            context.fillText("x:" + joystick.dx.toFixed(4)+ "y:"+ joystick.dy.toFixed(4), joystick.X - joystick.R -20 , joystick.Y - joystick.R -20 ) ;
+            context.fillText("x:" + this.dx.toFixed(4)+ "y:"+ this.dy.toFixed(4), this.X - this.R -20 , this.Y - this.R -20 ) ;
        
         }
 
 
+        isPressed(){
+
+        }
 
 
-        Eventen(analog){
+        Eventen(){
         canvas.addEventListener('touchstart', e => {
         const rect = canvas.getBoundingClientRect();
         const px = e.touches[0].clientX -rect.left;
         const py = e.touches[0].clientY -rect.top;
-        if (!toucharea(px, py, analog)) {      
+        if (!toucharea(px, py, this)) {      
        
-                analog.dx = 0;
-                analog.dy = 0;
+                this.dx = 0;
+                this.dy = 0;
 
 
               return;
         }
            
-        analog.x = px;
-        analog.y = py;
+        this.x = px;
+        this.y = py;
+        this.isPressed = true;
         })
 
 
@@ -113,35 +106,37 @@ export class joystick{
         const rect = canvas.getBoundingClientRect();
         const px = e.touches[0].clientX - rect.left;
         const py = e.touches[0].clientY - rect.top;
-        if (!toucharea(px, py, analog)) {
-                analog.dx = 0;
-                analog.dy = 0;
-                analog.x = analog.X;
-                analog.y = analog.Y;
+        if (!toucharea(px, py, this)) {
+                this.dx = 0;
+                this.dy = 0;
+                this.x = this.X;
+                this.y = this.Y;
+
               return;
         }
            
+        this.isPressed= true;
          
+        // så inre cirkeln inte går utanför den yttre cirkeln
 
-
-        analog.x = px;
-        analog.y = py;
+        this.x = px;
+        this.y = py;
          
-        let ax = analog.x - analog.X;
-        let ay = analog.y - analog.Y;
+        let ax = this.x - this.X;
+        let ay = this.y - this.Y;
 
 
         let mag = Math.sqrt(ax*ax + ay*ay);
 
 
-        analog.dx = ax / mag;
-        analog.dy = ay / mag;
+        this.dx = ax / mag;
+        this.dy = ay / mag;
 
 
         // Clamp to radius
-        if (mag > analog.R) {
-            analog.x = analog.X + analog.dx * analog.R;
-            analog.y = analog.Y + analog.dy * analog.R;
+        if (mag > this.R) {
+            this.x = this.X + this.dx * this.R;
+            this.y = this.Y + this.dy * this.R;
         }
      
     }
@@ -149,24 +144,18 @@ export class joystick{
 
 
        
-        // sluta röra oå sig går till bak in i centrum
+        //sluta rör gå till grundpostion
         canvas.addEventListener('touchend', e=>{
-            analog.x = analog.X;
-            analog.y = analog.Y;
-            analog.dx = 0;
-            analog.dy = 0;
+            this.x = this.X;
+            this.y = this.Y;
+            this.dx = 0;
+            this.dy = 0;
+            this.isPressed = false;
         }
         )
 
 
     }
-
-
-
-   //######################################################################################
-   // kollar så att inte man rör den utan för själva joystickes area annars så rör den sig över hela canvasen
-
-   
 
 
 
@@ -191,4 +180,6 @@ export class joystick{
        
 
 
-    
+
+
+ 

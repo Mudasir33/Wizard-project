@@ -18,11 +18,11 @@ export class Spell {
         this.x += this.dx * this.speed;
         this.y += this.dy * this.speed;
     }
-    draw(context) {
+    draw(context, camX, camY) {
         context.drawImage(
             this.sprite,
-            this.x - this.size / 2,
-            this.y - this.size / 2,
+            this.x - this.size / 2 - camX,
+            this.y - this.size / 2-camY,
             this.size,
             this.size
         );
@@ -33,6 +33,12 @@ export const spell_list = {
     fireball: {
         texture: "../Assets/Spells/fireball.gif",
         speed: 6,
+        damage: 12,
+        size: 40
+    },
+        test: {
+        texture: "../Assets/Images/Wizard.png", //just a test for button
+        speed: 30,
         damage: 12,
         size: 40
     }
