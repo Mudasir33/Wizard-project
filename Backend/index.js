@@ -22,7 +22,9 @@ socket.on("map", (loadmap) => {
 
 
   map = loadmap;
-  grid = loadmap.grid; 
+  
+  console.log("tesst",map.layers[3].length);
+  
   requestAnimationFrame(loop);
 });
 
@@ -33,35 +35,39 @@ function loop() {
 
   canvas.fillRect(0, 0, canvas.width, canvas.height);
 
-  const height = grid.length;
-  const width  = grid[0].length;
+  const height = map.layers[0].grid.length;
+  const width  = map.layers[0].grid[0].length
   const tileWH = 16;
   const tilesPerRow = ( tilesetImage.width/ 16);
 
   console.log("grid test sx:",  (36 % tilesPerRow)*16); //y
   console.log("grid test sy:",  Math.floor(36/tilesPerRow)*16);
   console.log("tiledRow: ",tilesetImage.width/16 );
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const {id} = grid[y][x];
-      //console.log("id test;", id);  tar ut rätt id (måste va placeringen)
-      const sx=  (id % tilesPerRow)*16;
-      const sy = Math.floor(id/tilesPerRow)*16;
-      
+  for(let i=0; i < map.layers.length;i++){
+    grid = map.layers[i].grid
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (grid[y][x] == null) {
+          continue;
+        }
+        const {id} = grid[y][x];
 
+        //console.log("id test;", id);  tar ut rätt id (måste va placeringen)
+        const sx=  (id % tilesPerRow)*16;
+        const sy = Math.floor(id/tilesPerRow)*16;
+        
+      //drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+        canvas.drawImage(
+          tilesetImage,
+          sx,
+          sy,
+          tileWH,tileWH,
+          x*tileWH,
+          y*tileWH,
+          tileWH,tileWH
 
-      
-    //drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
-      canvas.drawImage(
-        tilesetImage,
-        sx,
-        sy,
-        tileWH,tileWH,
-        x*tileWH,
-        y*tileWH,
-        tileWH,tileWH
-
-      );
+        );
+      }
     }
   }
 
