@@ -3,7 +3,7 @@ export class Trap {
         this.x = x;
         this.y = y;
 
-        this.size     = type.size;
+        this.size = type.size;
         this.visibleDist = type.visibleDist;
         this.triggerDist = type.triggerDist;
 
@@ -48,9 +48,9 @@ export class Trap {
 
 export const trap_list = {
     fire_trap: {
-        texture: "./fireball.gif",
+        texture: "../Assets/Spells/fireball.gif",
         size: 40,
-        visibleDist: 150,
-        triggerDist: 20
+        visibleDist: 130,
+        triggerDist: 25
     }
 };
