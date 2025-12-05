@@ -3,9 +3,12 @@
 const tmx = require('tmx-parser');
 
 function loadTMX(){
+     
     return  new Promise((resolve, reject) => {
+        
         tmx.parseFile("./Assets/maps/map1.tmx", function(err, map) {
         if (err) return reject(err); 
+        
         resolve(map);  
         });
     });

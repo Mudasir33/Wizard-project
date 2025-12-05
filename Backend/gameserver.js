@@ -50,14 +50,20 @@ function wallCollision(map2d,player_x,player_y,player_width,player_height) {
     
 }
 
-
+const MAX_ROOM = 5;
 async function startServer() {
+   
+    
     const Map2d = await mapCreation();
     obj=Map2d.objectLayers[0]
-    console.log("TEST OBJECT:",obj.obj.objects[1]);
+    console.log("TEST OBJECT:", Map2d);
     
         
     io.on("connection", socket =>{
+
+
+        
+
         console.log("connected:", socket.id);
         io.emit("map", Map2d); 
 

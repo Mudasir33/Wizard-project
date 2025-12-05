@@ -2,10 +2,10 @@
 const tilesetImage = new Image();
 tilesetImage.src = "/walls_floor.png";
 
-
 const gameCanvas = document.getElementById("canvas");
 gameCanvas.width = window.innerWidth;
 gameCanvas.height = window.innerHeight;
+
 const canvas = gameCanvas.getContext("2d");
 
 let map = null;  
