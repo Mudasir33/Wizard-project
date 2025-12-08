@@ -1,5 +1,9 @@
 export class Player{
     constructor(x, y) {
+        this.username = "";
+        this.color = "";
+        this.ready = false;
+
         this.x = x;
         this.y = y;
         this.health = 100;

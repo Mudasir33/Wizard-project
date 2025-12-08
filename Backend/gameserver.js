@@ -3,9 +3,10 @@ const http = require('http');
 const { connect } = require('http2');
 const { disconnect } = require('process');
 const socketIO = require('socket.io');
+const {Server} = require('socket.io');
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
+//const io = socketIO(server);
 const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
@@ -13,7 +14,47 @@ app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
 
 
+const io =  new Server(server, {
+cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+    }
+}
+);
 
+let x_kordinater = [0, 1, 2,3,4,5,6,7,8,9]
+let y_kordinater = [0, 1, 2,3,4,5,6,7,8,9]
+const colors = ["blue", "red", "green", "yellow", "brown", "white", "black", "purple", "gray", "rainbow"];
+
+let sessions = {
+    "Room 1": {
+        id: "Room 1",
+        players: [],},
+
+    "Room 2": {
+        id: "Room 2",
+        players: [],},
+
+    "Room 3": {
+        id: "Room 3",
+        players: [],},
+
+    "Room 4": {
+        id: "Room 4",
+        players: [],},
+
+    "Room 5": {
+        id: "Room 5",
+        players: [],},
+        
+
+
+};
+
+
+function updateSessions(){
+    io.emit("sessions", sessions);
+}
 ///------------------- MAP LOADING --------------------
 
 
@@ -110,9 +151,99 @@ async function startServer() {
             if (key == 'KeyW' || key == 'KeyS') playerInput[socket.id].dy = 0;
             if (key == 'KeyA' || key == 'KeyD') playerInput[socket.id].dx = 0;
         });
-    })
+
+
+        //###################SESSION AND ROOM##################################
+   socket.on("join", (p, room )=>{
+    console.log("join recavied");
+    console.log(p)
+
+    
+  
+
+
+
+
+    
+    const index =sessions[room].players.length +1 ;
+
+const player ={
+        username: p.username,
+        color: colors[index],
+        ready: false,
+        x: x_kordinater[index],
+        y: y_kordinater[index],
+        health: 100,
+        alive: true,
+      //  this.image = new Image();
+        //this.image.src = 'PixelCharacter.png';
+        speed : 100
+}
+        sessions[room].players.push(player);
+
+        socket.emit("joined", player)
+        //console.log("join player session", sessions[room].players)
+        socket.broadcast.emit("sessions", sessions);
+         });
+
+    
+
+
+        socket.on("update_sessions", ( room)=>{
+              socket.emit("sessions", sessions);
+            
+        });
+
+
+
+
+
+        socket.on("ready", (room, p) => {
+            let players = sessions[room].players;
+
+            console.log(sessions[room].players)
+            for ( let i = 0; i < players.length; i++){
+                    if(players[i].username === p.username){
+                        players[i].ready = p.ready
+                    
+                    }
+    };
+         io.emit("sessions", sessions);
+
+
+
+
+        });
+
+
+
+
+
+        });
+
+
+
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 setInterval(() => {
     // Update all player positions based on input
@@ -139,4 +270,6 @@ startServer().catch(console.error);
 server.listen(3000, () => {
     console.log("server start")
 })
+
+
 
