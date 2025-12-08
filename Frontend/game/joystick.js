@@ -1,27 +1,14 @@
 
 
-/*##########################################################################################
-Joystick fungerar: 
-för ny joystick: 
+/*###################################################
+Joystick exampel:
+        const movment = new joystick(
+        200*canvas.scale,                   (x)
+        (game_height-200)*canvas.scale,     (y)
+        75*canvas.scale);                   (r)
 
 
-let x = new joystick(x, y, r)
-Tänk att yttre cirkeln är r*2
-
-
-sedan i sin update måste man ha:
-x.draw(context)
-x.Eventen(x)
-
-
-x= postion i x led i canvas
-y = postion i y led i canvas
-r = radius för själva joysticken inre
-yttre cirkeln är R = r*2
 */
-
-
-
 export class joystick{
     constructor(x,y,r){
         //intre
