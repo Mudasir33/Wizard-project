@@ -153,79 +153,95 @@ async function startServer() {
         });
 
 
-        //###################SESSION AND ROOM##################################
-   socket.on("join", (p, room )=>{
+//###################SESSION AND ROOM##################################
+socket.on("join", (p, room )=>{
     console.log("join recavied");
-    console.log(p)
-
-    
+    let username_taken = false;
   
+    if( sessions[room].players.length >= 10){ //is room full
+        console.log("SERVER: try to join full room ")
+        socket.emit("joinerror", "ROOM FULL")
+        return;
+        }
 
-
-
-
+    for ( let i = 0; i < sessions[room].players.length; i++){
+        if(p.username == sessions[room].players[i].username){
+            console.log("JOIN USERNAME JOIN ERROR")
+            username_taken = true; }
+    };
     
-    const index =sessions[room].players.length +1 ;
+    if(username_taken == true){
+        socket.emit("joinerror", "USERNAMNE ALREADY TAKEN")
+        return
+    }
 
-const player ={
-        username: p.username,
-        color: colors[index],
-        ready: false,
-        x: x_kordinater[index],
-        y: y_kordinater[index],
-        health: 100,
-        alive: true,
+    const index =sessions[room].players.length;
+
+    const player ={
+    username: p.username,
+    color: colors[index],
+    ready: false,
+    x: x_kordinater[index],
+    y: y_kordinater[index],
+    health: 100,
+    alive: true,
       //  this.image = new Image();
         //this.image.src = 'PixelCharacter.png';
-        speed : 100
-}
-        sessions[room].players.push(player);
-
-        socket.emit("joined", player)
-        //console.log("join player session", sessions[room].players)
-        socket.broadcast.emit("sessions", sessions);
-         });
+    speed : 100 }
 
     
+    sessions[room].players.push(player);
+    socket.emit("joined", room)
+    socket.broadcast.emit("sessions", sessions);
+         });
 
 
-        socket.on("update_sessions", ( room)=>{
-              socket.emit("sessions", sessions);
+ socket.on("update_sessions", ( room)=>{
+        socket.emit("sessions", sessions);
+            });
+
+
+//###############ROOM##################################
+socket.on("ready", (room, p) => {
+    console.log("Server:", p.username, "changing ready")
+    let players = sessions[room].players;
+
+     for ( let i = 0; i < players.length; i++){
+        if(players[i].username === p.username){
+            players[i].ready = p.ready
+            }
+      };
+    io.emit("sessions", sessions);
+});
+
+socket.on("room_leave",(room, p)=>{
+    const exroom = sessions[room]
+    console.log("player:",p.username, "leaving room", exroom)
+    for(let i = 0; i < exroom.players.length; i++){
+        if(p.username == exroom.players[i].username ){
+            console.log()
+            sessions[room].players.splice(i, 1);
+            socket.emit("leftroom", sessions)
+            io.emit("sessions", sessions)
+            return;
             
-        });
+        }
+    }
+   
+    
+
+})
 
 
 
 
 
-        socket.on("ready", (room, p) => {
-            let players = sessions[room].players;
-
-            console.log(sessions[room].players)
-            for ( let i = 0; i < players.length; i++){
-                    if(players[i].username === p.username){
-                        players[i].ready = p.ready
-                    
-                    }
-    };
-         io.emit("sessions", sessions);
-
-
-
-
-        });
-
-
-
-
-
-        });
+}); //CONNECTION SOCKET
 
 
 
 
 }
-
 
 
 

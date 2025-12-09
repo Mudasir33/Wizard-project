@@ -1,6 +1,8 @@
 import { Player} from "./Player";
 
 
+// local player.
+
 
 
 const player =  new Player(0,0);

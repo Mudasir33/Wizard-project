@@ -1,10 +1,28 @@
 import { useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-import user from "../User";
+import user from "../../../game/User";
+import { socket } from "../../../game/Socket";
 
 
-  const socket = io("http://localhost:3000");
+
+
+function joinroom(room){
+    console.log("CLIENT: TRY TO JOIN ", room)
+    let username = document.getElementById("username").value;
+    if(username == ""){
+        return(alert("PUT IN USERNAME"))
+    } 
+    else{
+    user.setusername(username) ;
+
+    socket.emit("join", user.getplayer(), room );
+
+    //console.log("username: ",username);
+
+
+    }
+}
+
 
 
 
@@ -22,55 +40,21 @@ export default function Session() {
                 console.log("sessions recaived")
                 setSessions(data);
             });
-      
+
+         socket.on("joined", (room)=>{
+             nav("/room", {state: room})
+    })
+         
+         socket.on("joinerror", (msg)=>{
+            console.log("CLIENT: JOINERROR")
+            alert(msg);
+         })
     
        
     }, [])
 
 
-
-
-
-
     
-function joinroom(room){
-    //console.log("join room", room)
-    //console.log("player:", user);
-    
-    let username = document.getElementById("username").value;
-
-    for ( let i = 0; i < sessions[room].players.length; i++){
-        if(username == sessions[room].players[i].username){
-            return(alert("Username ALREADY EXISTS"))
-    } };
-
-    if(username == ""){
-        return(alert("PUT IN USERNAME"))
-    }
-    else if(sessions[room].players.length >= 10){
-        return(alert("ROOM FULL"))
-    }
-
-    else{
-    user.setusername(username) ;
-
-    socket.emit("join", user.getplayer(), room );
-
-    //console.log("username: ",username);
-
-
-    nav("/room", {state: room})
-    }
-}
-
-   
-
-
-
-
-
-
-
 
 return(
 <div>
