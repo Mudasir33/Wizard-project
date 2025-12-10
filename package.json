@@ -20,6 +20,7 @@
   "homepage": "https://github.com/Mudasir33/Wizard-project#readme",
   "dependencies": {
     "express": "^5.2.1",
+    "gsap": "^3.14.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tmx-parser": "^1.5.0"

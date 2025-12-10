@@ -111,7 +111,8 @@ async function startServer() {
             health: 100,
             alive: true,
             id: number,
-            speed: 100
+            speed: 100,
+            sequenceNumber: 0
         };
         playerInput[socket.id] = { dx: 0, dy: 0 };
         console.log(players);
@@ -138,12 +139,13 @@ async function startServer() {
 
         });
 
-        socket.on("keydown", (key) => {
+        socket.on("keydown", ({keycode, sequenceNumber}) => {
+            players[socket.id].sequenceNumber = sequenceNumber;
             if (!playerInput[socket.id]) return;
-            if (key == 'KeyW') playerInput[socket.id].dy = -1;
-            if (key == 'KeyS') playerInput[socket.id].dy = 1;
-            if (key == 'KeyA') playerInput[socket.id].dx = -1;
-            if (key == 'KeyD') playerInput[socket.id].dx = 1;
+            if (keycode == 'KeyW') playerInput[socket.id].dy = -1;
+            if (keycode == 'KeyS') playerInput[socket.id].dy = 1;
+            if (keycode == 'KeyA') playerInput[socket.id].dx = -1;
+            if (keycode == 'KeyD') playerInput[socket.id].dx = 1;
         });
 
         socket.on("keyup", (key) => {
@@ -276,11 +278,11 @@ setInterval(() => {
             dx *= inv; dy *= inv;
         }
 
-        player.x += dx * player.speed * 0.016;
-        player.y += dy * player.speed * 0.016;
+        player.x += dx * player.speed * 0.015
+        player.y += dy * player.speed * 0.015;
     }
     io.emit('updatePlayers', players);
-}, 16);
+}, 15);
 
 startServer().catch(console.error);
 server.listen(3000, () => {
