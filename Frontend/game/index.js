@@ -39,6 +39,8 @@ socket.on("updatePlayers", (backendPlayers) => {
       frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y);
     }
     else {
+        frontendPlayers[id].x = backendPlayer.x;
+        frontendPlayers[id].y = backendPlayer.y;
       if (id === socket.id) {
         // Update existing player position
         const lastBackendInputIndex = playerInputs.findIndex(input => {
@@ -72,7 +74,8 @@ socket.on("updatePlayers", (backendPlayers) => {
       }
     }
     //console.log(frontendPlayers);
-  }});
+  }
+});
 
 const keys = {};
 window.addEventListener('keydown', (e) => {
@@ -87,11 +90,6 @@ window.addEventListener('keyup', (e) => {
 const playerInputs = [];
 let sequenceNumber = 0;
 
-
-setInterval(() => {
-  updatePlayer();
-  //console.log("inputs:", playerInputs);
-}, 15);
 
 
 function updatePlayer() {
@@ -131,16 +129,13 @@ function updatePlayer() {
 
   frontendPlayers[socket.id].x += dx * frontendPlayers[socket.id].speed * 0.015;
   frontendPlayers[socket.id].y += dy * frontendPlayers[socket.id].speed * 0.015;
-
+  
 }
 
 
 
 
 function loop(t) {
-
-
-
   canvas.fillRect(0, 0, canvas.width, canvas.height);
 
   const height = map.layers[0].grid.length;
@@ -191,8 +186,11 @@ function loop(t) {
   //canvas.drawImage(player.image, player.x, player.y);
   //player.draw();
   //console.log(player);
-
-  requestAnimationFrame(loop);
-
 }
 
+setInterval(() => {
+  
+  updatePlayer();
+  requestAnimationFrame(loop);
+  //console.log("inputs:", playerInputs);
+}, 15);

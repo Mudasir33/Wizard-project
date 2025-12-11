@@ -10,6 +10,7 @@ const server = http.createServer(app);
 const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
+const { log } = require('console');
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
 
@@ -247,27 +248,12 @@ socket.on("room_leave",(room, p)=>{
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
 setInterval(() => {
     // Update all player positions based on input
     for (const id in players) {
         const player = players[id];
         const input = playerInput[id];
+        //onsole.log("input:", input);
         if (!input) continue;
 
         let dx = input.dx;
