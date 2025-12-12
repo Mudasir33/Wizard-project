@@ -6,21 +6,20 @@
         <title>Wizard Duel</title>
         <link href='https://fonts.googleapis.com/css?family=Pixelify Sans' rel='stylesheet'>
         <link rel="stylesheet" href="index.css">
-        <script src="index.js"></script>
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     </head>
-
     <body>
         <div id="header">Wizard Duel</div>
-        
-        <div id="homeWizard"><img src="../Assets/Images/wizard.png"></div>
-
+        <div id="homeWizard"><img src="../Assets/Images/wizard.png" alt="wizard"></div>
         <div id="menuContainer">
-            <div id ="buttons">
-                <br><button>Create Lobby</button></br>
-                <br><button>Join Lobby</button></br>
-                <br><button>Customize</button></br>
-                <br><button>Guide</button></br>
+            <div id="buttons">
+                <div><button>Create Lobby</button></div>
+                <div><button>Join Lobby</button></div>
+                <div><button>Customize</button></div>
+                <div><button>Guide</button></div>
             </div>
         </div>
+        <canvas id="canvas"></canvas>
+        <script type="module" src="game/index.js"></script>
     </body>
 </html>
