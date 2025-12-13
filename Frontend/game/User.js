@@ -8,8 +8,6 @@ import { Player} from "./Player";
 const player =  new Player(0,0);
 
 
-
-
  export const user = {
     setusername,
     setcolor,

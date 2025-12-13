@@ -1,3 +1,6 @@
+
+
+
 const express = require('express');
 const http = require('http');
 const { connect } = require('http2');
@@ -29,11 +32,11 @@ const y_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 
 let sessions = {
-    'Room 1': { id: 'Room 1', players: [] },
-    'Room 2': { id: 'Room 2', players: [] },
-    'Room 3': { id: 'Room 3', players: [] },
-    'Room 4': { id: 'Room 4', players: [] },
-    'Room 5': { id: 'Room 5', players: [] },
+    'Room 1': { id: 'Room 1', players: [],  ongoing: false},
+    'Room 2': { id: 'Room 2', players: [],  ongoing: false} ,
+    'Room 3': { id: 'Room 3', players: [],  ongoing: false},
+    'Room 4': { id: 'Room 4', players: [],  ongoing: false},
+    'Room 5': { id: 'Room 5', players: [],  ongoing: false},
 };
 
 function updateSessions() {
@@ -130,10 +133,15 @@ async function startServer() {
             if (key == 'KeyA' || key == 'KeyD') playerInput[socket.id].dx = 0;
         });
 
-        // ###################SESSION AND ROOM##################################
+        // ###################SESSION##################################
         socket.on('join', (p, room) => {
             console.log('join recavied');
             let username_taken = false;
+
+            if (sessions[room].ongoing == true){
+                   console.log('SERVER: room ongoing');
+                    socket.emit('joinerror', 'ROOM already ongoing');
+                    return            }
 
             if (sessions[room].players.length >= 10) {
                 // is room full
@@ -156,7 +164,7 @@ async function startServer() {
 
             const index = sessions[room].players.length;
 
-            const player = {
+              const player = {
                 username: p.username,
                 color: colors[index],
                 ready: false,
@@ -178,22 +186,41 @@ async function startServer() {
             socket.emit('sessions', sessions);
         });
 
-        // ##############SESSION AND ROOM##################
+        // ##############ROOM##################
         socket.on('ready', (room, p) => {
             console.log('Server:', p.username, 'changing ready');
             let players = sessions[room].players;
+            const numplayers = sessions[room].players.length;
+            let numready = 0;
+
+    
 
             for (let i = 0; i < players.length; i++) {
                 if (players[i].username === p.username) {
                     players[i].ready = p.ready;
                 }
+                 if(players[i].ready === true){
+                    numready = numready +1 ;
+                }
+                
             }
+            
+            if (numready/numplayers >= 0.5 && numplayers >= 2  ){
+                sessions[room].ongoing = true;
+            }
+
+        
+
+
+
+            
+
             io.emit('sessions', sessions);
         });
 
         socket.on('room_leave', (room, p) => {
             const exroom = sessions[room];
-            console.log('player:', p.username, 'leaving room', exroom);
+            console.log('player:', p.username, 'leaving room', exroom.id);
             for (let i = 0; i < exroom.players.length; i++) {
                 if (p.username == exroom.players[i].username) {
                     console.log();
@@ -235,3 +262,5 @@ startServer().catch(console.error);
 server.listen(3000, () => {
     console.log('server start');
 });
+
+

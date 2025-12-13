@@ -18,11 +18,17 @@ function joinroom(room){
     socket.emit("join", user.getplayer(), room );
 
     //console.log("username: ",username);
-
-
     }
 }
 
+function ongoing(room){
+    if (room.ongoing == false){
+       return(<h3 >No</h3>)
+    }
+    if(room.ongoing == true){
+         return(<h3>Yes</h3>)
+    }
+}
 
 
 
@@ -66,6 +72,7 @@ return(
         <tr>
             <th>Room</th>
             <th>players</th>
+            <th>Ongoing</th>
             <th>JOIN</th>
         </tr>
         </thead>
@@ -76,6 +83,7 @@ return(
                 <tr key ={i}>
                 <td>{room.id}</td>
                 <td>{room.players.length}</td>
+                <td>{ongoing(room)}</td>
                 <td><button onClick={() => joinroom(room.id) } >JOIN</button></td>
                 </tr>
             ))}
