@@ -143,6 +143,13 @@ async function startServer() {
                     socket.emit('joinerror', 'ROOM already ongoing');
                     return            }
 
+             if(p.username == ""){
+                    console.log('SERVER: Username empty');
+                    socket.emit('joinerror', 'Put in username');
+                    return  
+                     
+                    
+                    } 
             if (sessions[room].players.length >= 10) {
                 // is room full
                 console.log('SERVER: try to join full room ');
@@ -178,8 +185,12 @@ async function startServer() {
             };
 
             sessions[room].players.push(player);
+            io.emit('sessions', sessions);
             socket.emit('joined', room);
-            socket.broadcast.emit('sessions', sessions);
+
+
+
+
         });
 
         socket.on('update_sessions', (room) => {
@@ -188,8 +199,8 @@ async function startServer() {
 
         // ##############ROOM##################
         socket.on('ready', (room, p) => {
-            console.log('Server:', p.username, 'changing ready');
-            let players = sessions[room].players;
+           // console.log('Server:', p.username, 'changing ready');
+            const players = sessions[room].players;
             const numplayers = sessions[room].players.length;
             let numready = 0;
 
@@ -200,21 +211,19 @@ async function startServer() {
                     players[i].ready = p.ready;
                 }
                  if(players[i].ready === true){
-                    numready = numready +1 ;
+                    numready = numready +1;
                 }
                 
             }
             
-            if (numready/numplayers >= 0.5 && numplayers >= 2  ){
+            if (numready/numplayers >= 0.50 && numplayers >= 2  ){
                 sessions[room].ongoing = true;
+            }
+            else{
+                 sessions[room].ongoing = false;
             }
 
         
-
-
-
-            
-
             io.emit('sessions', sessions);
         });
 
@@ -223,10 +232,13 @@ async function startServer() {
             console.log('player:', p.username, 'leaving room', exroom.id);
             for (let i = 0; i < exroom.players.length; i++) {
                 if (p.username == exroom.players[i].username) {
-                    console.log();
                     sessions[room].players.splice(i, 1);
+                    if(sessions[room].players.length == 1){
+                        sessions[room].ongoing = false;
+                    }
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
+
                     return;
                 }
             }

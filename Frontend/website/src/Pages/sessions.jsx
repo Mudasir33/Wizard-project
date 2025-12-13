@@ -9,16 +9,13 @@ import { socket } from "../../../game/Socket";
 function joinroom(room){
     console.log("CLIENT: TRY TO JOIN ", room)
     let username = document.getElementById("username").value;
-    if(username == ""){
-        return(alert("PUT IN USERNAME"))
-    } 
-    else{
+   
     user.setusername(username) ;
 
     socket.emit("join", user.getplayer(), room );
 
     //console.log("username: ",username);
-    }
+
 }
 
 function ongoing(room){
