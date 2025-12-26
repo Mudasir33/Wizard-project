@@ -10,8 +10,6 @@ canvas.height = window.innerHeight;
 
 const ctx = canvas.getContext('2d');
 
-ctx.translate(canvas.width / 2, canvas.height / 2);
-
 ctx.imageSmoothingEnabled = false;
 let map = null;
 let grid = null;
@@ -126,11 +124,12 @@ function updatePlayer() {
 }
 
 function loop(t) {
-  //ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = "white";
+  ctx.fillRect(-10, -10, screen.width, screen.height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.translate(
-    canvas.width/2 - frontendPlayers[socket.id].x,
-    canvas.height/2 - frontendPlayers[socket.id].y
+    canvas.width / 2 - frontendPlayers[socket.id].x,
+    canvas.height / 2 - frontendPlayers[socket.id].y
   );
 
 
@@ -175,10 +174,10 @@ function loop(t) {
   ctx.fillRect(0, 0, 10, 10);
 
   for (const id in frontendPlayers) {
-      const player = frontendPlayers[id];
-      ctx.drawImage(player.image, player.x, player.y);
-    }
-  
+    const player = frontendPlayers[id];
+    ctx.drawImage(player.image, player.x, player.y);
+  }
+
 
   // canvas.drawImage(player.image, player.x, player.y);
   // player.draw();
