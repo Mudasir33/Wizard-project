@@ -3,13 +3,16 @@ import { Player } from './Player.js';
 const tilesetImage = new Image();
 tilesetImage.src = '/walls_floor.png';
 
-const gameCanvas = document.getElementById('canvas');
-gameCanvas.width = window.innerWidth;
-gameCanvas.height = window.innerHeight;
+const canvas = document.getElementById('canvas');
 
-const canvas = gameCanvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-canvas.imageSmoothingEnabled = false;
+const ctx = canvas.getContext('2d');
+
+ctx.translate(canvas.width / 2, canvas.height / 2);
+
+ctx.imageSmoothingEnabled = false;
 let map = null;
 let grid = null;
 
@@ -123,7 +126,13 @@ function updatePlayer() {
 }
 
 function loop(t) {
-  canvas.fillRect(0, 0, canvas.width, canvas.height);
+  //ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.translate(
+    canvas.width/2 - frontendPlayers[socket.id].x,
+    canvas.height/2 - frontendPlayers[socket.id].y
+  );
+
 
   const height = map.layers[0].grid.length;
   const width = map.layers[0].grid[0].length;
@@ -146,7 +155,7 @@ function loop(t) {
         const sy = Math.floor(id / tilesPerRow) * 16;
 
         // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
-        canvas.drawImage(
+        ctx.drawImage(
           tilesetImage,
           sx,
           sy,
@@ -162,13 +171,14 @@ function loop(t) {
   }
 
   // tiny red debug square on top (optional, you can remove this)
-  canvas.fillStyle = '#ff0000';
-  canvas.fillRect(0, 0, 10, 10);
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(0, 0, 10, 10);
 
   for (const id in frontendPlayers) {
-    const player = frontendPlayers[id];
-    canvas.drawImage(player.image, player.x, player.y);
-  }
+      const player = frontendPlayers[id];
+      ctx.drawImage(player.image, player.x, player.y);
+    }
+  
 
   // canvas.drawImage(player.image, player.x, player.y);
   // player.draw();
