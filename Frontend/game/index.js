@@ -11,8 +11,10 @@ canvas.height = window.innerHeight;
 const ctx = canvas.getContext('2d');
 
 ctx.imageSmoothingEnabled = false;
+
 let map = null;
 let grid = null;
+let scaleup_constant = 4; //keep in factors of 2, 2,4,8,16
 
 const socket = io('http://localhost:3000');
 
@@ -125,11 +127,11 @@ function updatePlayer() {
 
 function loop(t) {
   ctx.fillStyle = "white";
-  ctx.fillRect(-10, -10, screen.width, screen.height);
+  ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.translate(
-    canvas.width / 2 - frontendPlayers[socket.id].x,
-    canvas.height / 2 - frontendPlayers[socket.id].y
+    canvas.width / 2 - frontendPlayers[socket.id].x * scaleup_constant,
+    canvas.height / 2 - frontendPlayers[socket.id].y * scaleup_constant
   );
 
 
@@ -160,22 +162,28 @@ function loop(t) {
           sy,
           tileWH,
           tileWH,
-          x * tileWH,
-          y * tileWH,
-          tileWH,
-          tileWH
+          x * tileWH * scaleup_constant,
+          y * tileWH * scaleup_constant,
+          tileWH * scaleup_constant,
+          tileWH * scaleup_constant
         );
       }
     }
   }
 
   // tiny red debug square on top (optional, you can remove this)
-  ctx.fillStyle = '#ff0000';
-  ctx.fillRect(0, 0, 10, 10);
+  //ctx.fillStyle = '#ff0000';
+  //ctx.fillRect(0, 0, 10 * scaleup_constant, 10 * scaleup_constant);
 
   for (const id in frontendPlayers) {
     const player = frontendPlayers[id];
-    ctx.drawImage(player.image, player.x, player.y);
+    ctx.drawImage(
+      player.image,
+      player.x * scaleup_constant, 
+      player.y * scaleup_constant,
+      11 * scaleup_constant, //11 is the width of the player sprite
+      15 * scaleup_constant //15 is the height of the player sprite
+    );
   }
 
 
