@@ -1,6 +1,4 @@
 
-
-
 const express = require('express');
 const http = require('http');
 const { connect } = require('http2');
@@ -21,10 +19,10 @@ app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
 
 const io = new Server(server, {
-    cors: {
-        origin: 'http://localhost:5173',
-        methods: ['GET', 'POST'],
-    },
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
 });
 
 const x_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -271,8 +269,8 @@ setInterval(() => {
 
 startServer().catch(console.error);
 
-server.listen(3000, () => {
-    console.log('server start');
+server.listen(3000, '0.0.0.0', () => {
+  console.log('server start on all interfaces');
 });
 
 

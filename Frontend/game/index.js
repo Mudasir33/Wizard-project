@@ -16,7 +16,7 @@ let map = null;
 let grid = null;
 let scaleup_constant = 4; //keep in factors of 2, 2,4,8,16
 
-const socket = io('http://localhost:3000');
+const socket = io('http://95.155.245.165:3000');
 
 socket.on('connect', () => {
   console.log(`you connected with id: ${socket.id}`);
@@ -177,13 +177,21 @@ function loop(t) {
 
   for (const id in frontendPlayers) {
     const player = frontendPlayers[id];
-    ctx.drawImage(
-      player.image,
-      player.x * scaleup_constant, 
-      player.y * scaleup_constant,
-      11 * scaleup_constant, //11 is the width of the player sprite
-      15 * scaleup_constant //15 is the height of the player sprite
-    );
+    player.draw(ctx, scaleup_constant);
+  }
+
+  // Check for collisions between players
+  const playerIds = Object.keys(frontendPlayers);
+  for (let i = 0; i < playerIds.length; i++) {
+    for (let j = i + 1; j < playerIds.length; j++) {
+      const player1 = frontendPlayers[playerIds[i]];
+      const player2 = frontendPlayers[playerIds[j]];
+      if (player1.checkCollision(player2)) {
+        // Simple collision damage
+        player1.takeDamage(1);
+        player2.takeDamage(1);
+      }
+    }
   }
 
 
