@@ -1,4 +1,5 @@
 import { Player } from './Player.js';
+import { Joystick } from './joystick.js';
 
 const tilesetImage = new Image();
 tilesetImage.src = '/walls_floor.png';
@@ -14,7 +15,11 @@ ctx.imageSmoothingEnabled = false;
 
 let map = null;
 let grid = null;
-let scaleup_constant = 4; //keep in factors of 2, 2,4,8,16
+// Adjust zoom so the same world area is visible across devices
+const isMobile = window.innerWidth < 768;
+const TILE_SIZE = 16; // tile width/height in source image
+const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
+let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
 const socket = io('http://95.155.245.165:3000');
 
@@ -85,33 +90,35 @@ window.addEventListener('keyup', (e) => {
 const playerInputs = [];
 let sequenceNumber = 0;
 
+// Initialize joystick
+const joystickRadius = Math.min(canvas.width, canvas.height) * 0.08;
+const joystickX = canvas.width * 0.2;
+const joystickY = canvas.height * 0.75;
+const joystick = new Joystick(joystickX, joystickY, joystickRadius);
+joystick.attachEvents(canvas);
+
 function updatePlayer() {
   let dx = 0,
     dy = 0;
-  // console.log("keys:", keys);
+
+  // Check keyboard input
   if (keys['ArrowUp'] || keys['w'] || keys['W']) {
-    sequenceNumber++;
-    playerInputs.push({ sequenceNumber, dx: 0, dy: -1 });
     dy = -1;
-    socket.emit('keydown', { keycode: 'KeyW', sequenceNumber });
   }
   if (keys['ArrowDown'] || keys['s'] || keys['S']) {
-    sequenceNumber++;
-    playerInputs.push({ sequenceNumber, dx: 0, dy: 1 });
     dy = 1;
-    socket.emit('keydown', { keycode: 'KeyS', sequenceNumber });
   }
   if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-    sequenceNumber++;
-    playerInputs.push({ sequenceNumber, dx: -1, dy: 0 });
     dx = -1;
-    socket.emit('keydown', { keycode: 'KeyA', sequenceNumber });
   }
   if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-    sequenceNumber++;
-    playerInputs.push({ sequenceNumber, dx: 1, dy: 0 });
     dx = 1;
-    socket.emit('keydown', { keycode: 'KeyD', sequenceNumber });
+  }
+
+  // Check joystick input (mobile)
+  if (joystick.isPressed) {
+    dx = joystick.dx;
+    dy = joystick.dy;
   }
 
   // Normalize diagonal movement
@@ -121,17 +128,31 @@ function updatePlayer() {
     dy *= inv;
   }
 
-  frontendPlayers[socket.id].x += dx * frontendPlayers[socket.id].speed * 0.015;
-  frontendPlayers[socket.id].y += dy * frontendPlayers[socket.id].speed * 0.015;
+  // Update player position
+  if (frontendPlayers[socket.id]) {
+    frontendPlayers[socket.id].x += dx * frontendPlayers[socket.id].speed * 0.015;
+    frontendPlayers[socket.id].y += dy * frontendPlayers[socket.id].speed * 0.015;
+
+    // Send combined movement input to server (always, even when 0, to stop movement)
+    socket.emit('movement', { dx, dy, sequenceNumber });
+  }
 }
 
 function loop(t) {
   ctx.fillStyle = "white";
   ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  
+  // Center camera on player (same behavior on mobile and desktop)
+  const cameraOffsetX = canvas.width / 2;
+  const cameraOffsetY = canvas.height / 2;
+
+  // Recompute scale dynamically to keep consistent view across resolutions
+  scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+
   ctx.translate(
-    canvas.width / 2 - frontendPlayers[socket.id].x * scaleup_constant,
-    canvas.height / 2 - frontendPlayers[socket.id].y * scaleup_constant
+    cameraOffsetX - frontendPlayers[socket.id].x * scaleup_constant,
+    cameraOffsetY - frontendPlayers[socket.id].y * scaleup_constant
   );
 
 
@@ -179,6 +200,12 @@ function loop(t) {
     const player = frontendPlayers[id];
     player.draw(ctx, scaleup_constant);
   }
+
+  // Reset canvas transformation to draw UI (joystick) in screen coordinates
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  
+  // Draw joystick (fixed to screen, not affected by camera)
+  joystick.draw(ctx);
 
   // Check for collisions between players
   const playerIds = Object.keys(frontendPlayers);

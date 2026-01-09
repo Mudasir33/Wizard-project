@@ -131,6 +131,13 @@ async function startServer() {
             if (key == 'KeyA' || key == 'KeyD') playerInput[socket.id].dx = 0;
         });
 
+        socket.on('movement', ({ dx, dy, sequenceNumber }) => {
+            players[socket.id].sequenceNumber = sequenceNumber;
+            if (!playerInput[socket.id]) return;
+            playerInput[socket.id].dx = dx;
+            playerInput[socket.id].dy = dy;
+        });
+
         // ###################SESSION##################################
         socket.on('join', (p, room) => {
             console.log('join recavied');

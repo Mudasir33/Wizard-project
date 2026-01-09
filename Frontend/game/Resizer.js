@@ -1,8 +1,3 @@
-
-
-
-
-
 export function resize(){
     let mobliesize_width = window.innerWidth;
     let mobliesize_height = window.innerHeight;
