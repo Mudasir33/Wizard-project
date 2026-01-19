@@ -6,6 +6,7 @@ import { socket } from "../../../game/Socket";
 
 
 
+
 function joinroom(room){
     console.log("CLIENT: TRY TO JOIN ", room)
     let username = document.getElementById("username").value;
@@ -90,7 +91,7 @@ return(
     </table>
 <label htmlFor="username">Username: </label> <br></br>
 <input type="text" id="username" name="username" placeholder="Enter Username"></input>
-
+<button onClick={() => nav("/Guide")} >Guide</button>
 
 
 

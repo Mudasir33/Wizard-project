@@ -4,6 +4,7 @@ import './App.css'
 
 import Sessions from './Pages/sessions'
 import Room from "./Pages/Room";
+import Guide from "./Pages/Guide";
 
 export default function App() {
 
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route path ="/" element={<Sessions></Sessions>}></Route>
         <Route path="/room" element={<Room></Room>}></Route>
+          <Route path="/Guide" element={<Guide></Guide>}></Route>
       </Routes>
     </BrowserRouter>
 
