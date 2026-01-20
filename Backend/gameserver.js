@@ -221,7 +221,7 @@ async function startServer() {
                 
             }
             
-            if (numready/numplayers >= 0.50 && numplayers >= 2  ){
+            if (numready/numplayers >= 0.51 && numplayers >= 2  ){
                 sessions[room].ongoing = true;
             }
             else{
