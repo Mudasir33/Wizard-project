@@ -20,10 +20,10 @@ app.use(express.static(path.join(__dirname, '../Frontend/game')));
 app.use("/Assets", express.static(path.join(__dirname, "../Assets")));
 
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+    },
 });
 
 const x_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; //temporay
@@ -31,11 +31,11 @@ const y_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 
 let sessions = {
-    'Room 1': { id: 'Room 1', players: [],  ongoing: false},
-    'Room 2': { id: 'Room 2', players: [],  ongoing: false} ,
-    'Room 3': { id: 'Room 3', players: [],  ongoing: false},
-    'Room 4': { id: 'Room 4', players: [],  ongoing: false},
-    'Room 5': { id: 'Room 5', players: [],  ongoing: false},
+    'Room 1': { id: 'Room 1', players: [], ongoing: false },
+    'Room 2': { id: 'Room 2', players: [], ongoing: false },
+    'Room 3': { id: 'Room 3', players: [], ongoing: false },
+    'Room 4': { id: 'Room 4', players: [], ongoing: false },
+    'Room 5': { id: 'Room 5', players: [], ongoing: false },
 };
 
 function updateSessions() {
@@ -50,6 +50,9 @@ app.use(express.static('Public'));
 
 const players = {};
 const playerInput = {};
+const backendProjectiles = {};
+let projectileId = 0;
+
 
 function wallCollision(map2d, player_x, player_y, player_width, player_height) {
     const obj = Map2d.objectLayers[0].obj;
@@ -138,24 +141,38 @@ async function startServer() {
             playerInput[socket.id].dx = dx;
             playerInput[socket.id].dy = dy;
         });
+        //###############Projectiles##########################
+        socket.on('spellCast', ({ spellName, spellDirection, x, y }) => {
+            projectileId += 1;
+            backendProjectiles[projectileId] = {
+                spellName: spellName,
+                spellDirection: spellDirection,
+                x: x,
+                y: y,
+                playerId: socket.id,
+                speed: 100
+            };
+            //console.log(backendProjectiles);
+        });
 
         // ###################SESSION##################################
         socket.on('join', (p, room) => {
             console.log('join recavied');
             let username_taken = false;
 
-            if (sessions[room].ongoing == true){
-                   console.log('SERVER: room ongoing');
-                    socket.emit('joinerror', 'ROOM already ongoing');
-                    return            }
+            if (sessions[room].ongoing == true) {
+                console.log('SERVER: room ongoing');
+                socket.emit('joinerror', 'ROOM already ongoing');
+                return
+            }
 
-             if(p.username == ""){
-                    console.log('SERVER: Username empty');
-                    socket.emit('joinerror', 'Put in username');
-                    return  
-                     
-                    
-                    } 
+            if (p.username == "") {
+                console.log('SERVER: Username empty');
+                socket.emit('joinerror', 'Put in username');
+                return
+
+
+            }
             if (sessions[room].players.length >= 10) {
                 // is room full
                 console.log('SERVER: try to join full room ');
@@ -177,7 +194,7 @@ async function startServer() {
 
             const index = sessions[room].players.length;
 
-              const player = {
+            const player = {
                 username: p.username,
                 color: colors[index],
                 ready: false,
@@ -201,31 +218,31 @@ async function startServer() {
 
         // ##############ROOM##################
         socket.on('ready', (room, p) => {
-           // console.log('Server:', p.username, 'changing ready');
+            // console.log('Server:', p.username, 'changing ready');
             const players = sessions[room].players;
             const numplayers = sessions[room].players.length;
             let numready = 0;
 
-    
+
 
             for (let i = 0; i < players.length; i++) {
                 if (players[i].username === p.username) {
                     players[i].ready = p.ready;
                 }
-                 if(players[i].ready === true){
-                    numready = numready +1;
+                if (players[i].ready === true) {
+                    numready = numready + 1;
                 }
-                
-            }
-            
-            if (numready/numplayers >= 0.51 && numplayers >= 2  ){
-                sessions[room].ongoing = true;
-            }
-            else{
-                 sessions[room].ongoing = false;
+
             }
 
-        
+            if (numready / numplayers >= 0.51 && numplayers >= 2) {
+                sessions[room].ongoing = true;
+            }
+            else {
+                sessions[room].ongoing = false;
+            }
+
+
             io.emit('sessions', sessions);
         });
 
@@ -235,7 +252,7 @@ async function startServer() {
             for (let i = 0; i < exroom.players.length; i++) {
                 if (p.username == exroom.players[i].username) {
                     sessions[room].players.splice(i, 1);
-                    if(sessions[room].players.length == 1){
+                    if (sessions[room].players.length == 1) {
                         sessions[room].ongoing = false;
                     }
                     socket.emit('leftroom', sessions);
@@ -268,13 +285,25 @@ setInterval(() => {
         player.x += dx * player.speed * 0.015;
         player.y += dy * player.speed * 0.015;
     }
+    // Update all projectile positions
+    for (const id in backendProjectiles) {
+        const projectile = backendProjectiles[id];
+        const direction = projectile.spellDirection;
+        let dx = direction.x;
+        let dy = direction.y;
+
+        projectile.x += dx * projectile.speed * 0.015;
+        projectile.y += dy * projectile.speed * 0.015;
+        
+    }
+    io.emit('updateProjectiles', backendProjectiles);
     io.emit('updatePlayers', players);
 }, 15);
 
 startServer().catch(console.error);
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('server start on all interfaces');
+    console.log('server start on all interfaces');
 });
 
 

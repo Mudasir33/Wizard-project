@@ -61,7 +61,7 @@ export const spell_list = {
     },
         test: {
         texture: "./Assets/Images/Wizard.png", //just a test for button
-        speed: 30,
+        speed: 2,
         damage: 12,
         size: 40
     }

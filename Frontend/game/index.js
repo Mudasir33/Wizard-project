@@ -95,8 +95,25 @@ const playerInputs = [];
 let sequenceNumber = 0;
 let gameLoopActive = false;
 //##########Projectiles/spells##########################################################################################
-const frontEndProjectiles = [];
 
+const frontEndProjectiles = {};
+socket.on('updateProjectiles', (backendProjectiles) => {
+  for (const id in backendProjectiles) {
+    const backendProjectile = backendProjectiles[id];
+
+    if (!frontEndProjectiles[id]) {
+      frontEndProjectiles[id] = new Spell(
+        backendProjectile.x,
+        backendProjectile.y,
+        spell_list[backendProjectile.spellName],
+        backendProjectile.spellDirection
+      );
+    } else {
+      frontEndProjectiles[id].x = backendProjectile.x;
+      frontEndProjectiles[id].y = backendProjectile.y;
+    }
+  }
+});
 
 //####SPELLS#############################################################################################
 let direction = {
@@ -204,6 +221,14 @@ function updatePlayer() {
 
 //####SPELL CREATION#############################################################################################
 function spellCreate(spellName, spellDirection) {
+  socket.emit('spellCast', {
+    spellName: spellName,
+    spellDirection: spellDirection,
+    x: frontendPlayers[socket.id].x,
+    y: frontendPlayers[socket.id].y
+  })
+
+  /*
   if (frontendPlayers[socket.id]) {
     console.log("Creating spell:", spellName, "Direction:", spellDirection, "Spell list length before:", spelllist.length);
     spelllist.push(
@@ -218,6 +243,7 @@ function spellCreate(spellName, spellDirection) {
   } else {
     console.warn("Cannot create spell - no player");
   }
+    */
 }
 
 //####CHANGE SPELL#############################################################################################
@@ -297,11 +323,20 @@ function loop(t) {
     player.draw(ctx, scaleup_constant);
   }
 
-  // Draw and update spells with proper camera offset (still in world transform)
+  for (const id in frontEndProjectiles) {
+    const projectile = frontEndProjectiles[id];
+    projectile.draw(ctx, scaleup_constant);
+  }
+
+
+  //Old local spell drawing code (now handled by server updates)
+  /* Draw and update spells with proper camera offset (still in world transform)
   const camX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
   const camY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
   
-  for (let i = 0; i < spelllist.length; i++) {
+
+   Old local spell drawing code (now handled by server updates)
+  for (let i = spelllist.length - 1; i >= 0; i--) {
     try {
       const s = spelllist[i];
       if (s) {
@@ -312,6 +347,7 @@ function loop(t) {
       console.error("Error with spell:", error);
     }
   }
+  */
 
   // Reset canvas transformation to draw UI (joystick) in screen coordinates
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -347,8 +383,12 @@ function loop(t) {
     console.error("Error in loop:", error);
   }
   
-  requestAnimationFrame(loop);
+  //requestAnimationFrame(loop);
 }
+ //Vill ha game loop här för att undvika att för mycket information skickas fram och tillbaka mellan klient och server
+setInterval(() => {
+  requestAnimationFrame(loop);
+},15);
 
 //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
 // Setup button event handlers
