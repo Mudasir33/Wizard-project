@@ -1,18 +1,4 @@
-
-
-/*button exempel:
-//const b1 = 
-          new button(
-          (game_width-225)*canvas.scale,        (x)
-          (game_height-425) *canvas.scale,      (y)
-          50*canvas.scale                       (r)
-          , "1",                                (text)
-          "test",                               (name)
-          ()=> changespell(1)  );               (onclick funktion)
-
-
-          */
-export class button{
+export class Button{
     constructor(x, y, r, text, name, onclick){
         this.name = name;
         this.x = x; 
@@ -22,6 +8,8 @@ export class button{
         this.name = name;
         this.onclick = onclick;
         this.isPressed = false;
+        this.canvas = null;
+        this.touchId = null;  // Track which touch is pressing this button
     }
 
     draw(context) {
@@ -39,46 +27,54 @@ export class button{
            
     }
 
-
-
-
-
-     Eventen(){
-        canvas.addEventListener('touchstart', e => {
-        const rect = canvas.getBoundingClientRect();
-        const px = e.touches[0].clientX -rect.left;
-        const py = e.touches[0].clientY -rect.top;
-       
-        if (!toucharea(px, py, this)) {      
-              return;
-        }
-        this.isPressed = true;
-        this.onclick();
-
-         console.log("button: ", this.name, "pressed")
-    
-    });
-     }
-
-}
-
-
-
-
-
-
-
-function toucharea(x,y, button){ 
-        let dx = x - button.x;
-        let dy = y - button.y;
-        let distance = Math.sqrt(dx*dx + dy*dy);
-
-
-        if(button.r >= distance){
-            return true;
-        }
-        else{
-            return false;
-        }
-
+    setCanvas(canvasElement) {
+        this.canvas = canvasElement;
     }
+
+    Eventen(){
+        if (!this.canvas || this.eventsAttached) return;
+        this.eventsAttached = true;
+        
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (!e.touches || e.touches.length === 0) return;
+            
+            // Find touch that is within this button's area
+            for (let touch of e.touches) {
+                const rect = this.canvas.getBoundingClientRect();
+                const px = touch.clientX - rect.left;
+                const py = touch.clientY - rect.top;
+               
+                if (this.isTouchInArea(px, py)) {
+                    this.touchId = touch.identifier;
+                    this.isPressed = true;
+                    if (this.onclick) this.onclick();
+                    console.log("button: ", this.name, "pressed");
+                    break;
+                }
+            }
+        });
+        
+        this.canvas.addEventListener('touchend', (e) => {
+            // Check if our touchId ended
+            let touchExists = false;
+            for (let touch of e.touches) {
+                if (touch.identifier === this.touchId) {
+                    touchExists = true;
+                    break;
+                }
+            }
+            
+            if (!touchExists && this.touchId !== null) {
+                this.isPressed = false;
+                this.touchId = null;
+            }
+        });
+    }
+
+    isTouchInArea(x, y) {
+        let dx = x - this.x;
+        let dy = y - this.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        return this.r >= distance;
+    }
+}

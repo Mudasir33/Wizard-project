@@ -192,10 +192,6 @@ async function startServer() {
             sessions[room].players.push(player);
             io.emit('sessions', sessions);
             socket.emit('joined', room);
-
-
-
-
         });
 
         socket.on('update_sessions', (room) => {
