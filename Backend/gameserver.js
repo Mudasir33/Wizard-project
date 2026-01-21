@@ -17,6 +17,7 @@ const { log } = require('console');
 
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
+app.use("/Assets", express.static(path.join(__dirname, "../Assets")));
 
 const io = new Server(server, {
   cors: {

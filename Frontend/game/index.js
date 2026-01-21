@@ -23,7 +23,7 @@ const TILE_SIZE = 16; // tile width/height in source image
 const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
 let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
-const socket = io('http://95.155.245.165:3000');
+const socket = io('http://localhost:3000');
 
 socket.on('connect', () => {
   console.log(`you connected with id: ${socket.id}`);

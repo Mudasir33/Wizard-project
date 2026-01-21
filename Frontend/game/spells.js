@@ -53,13 +53,14 @@ export class Spell {
 
 export const spell_list = {
     fireball: {
-        texture: "../../Assets/Spells/fireball.gif",
+        
+        texture: "./Assets/Spells/fireball.gif",
         speed: 6,
         damage: 12,
         size: 40
     },
         test: {
-        texture: "../Assets/Images/Wizard.png", //just a test for button
+        texture: "./Assets/Images/Wizard.png", //just a test for button
         speed: 30,
         damage: 12,
         size: 40
