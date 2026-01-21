@@ -94,6 +94,9 @@ window.addEventListener('keyup', (e) => {
 const playerInputs = [];
 let sequenceNumber = 0;
 let gameLoopActive = false;
+//##########Projectiles/spells##########################################################################################
+const frontEndProjectiles = [];
+
 
 //####SPELLS#############################################################################################
 let direction = {
@@ -302,7 +305,7 @@ function loop(t) {
     try {
       const s = spelllist[i];
       if (s) {
-        s.draw(ctx, camX / scaleup_constant, camY / scaleup_constant);
+        s.draw(ctx, scaleup_constant);
         s.update();
       }
     } catch (error) {
