@@ -61,7 +61,7 @@ export default function Session() {
     
 
 return(
-<div>
+<div name="main_session">
     <h2>Session</h2>
 
 
@@ -69,7 +69,7 @@ return(
         <thead>
         <tr>
             <th>Room</th>
-            <th>players</th>
+            <th>Players</th>
             <th>Ongoing</th>
             <th>JOIN</th>
         </tr>
