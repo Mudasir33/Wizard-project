@@ -462,7 +462,7 @@ setInterval(() => {
 
 
   return (
-    <div>
+    <div className="gamecanvas">
       <canvas ref={canvasRef}></canvas>
     </div>
   );
