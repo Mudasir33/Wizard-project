@@ -6,6 +6,7 @@ import { Joystick }  from "../../../game/joystick.js";
 import { Button }  from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
+import { Socket } from "socket.io-client";
 export default function Game() {
   //should help with 
   const { state: roomkey } = useLocation();
@@ -13,14 +14,22 @@ export default function Game() {
   const canvasRef = useRef(null);
   const startedRef = false;
   const keysRef = useRef({});
+  const playerInputsRef = useRef([]);
+  const frontEndProjectilesRef = useRef({})
   let gameLoopActive = false;
+  const gameStartedRef = useRef(false);
+
   console.log("ROOM",roomkey);
   
 
 
 
   useEffect(()=>{
-     socket.emit("gameStart", roomkey)
+    if (!gameStartedRef.current) {
+    socket.emit("gameStart", roomkey);
+    gameStartedRef.current = true;
+  }
+    
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -59,7 +68,7 @@ export default function Game() {
     }
     socket.on("map", mapOn);
     const frontendPlayers = frontendPlayersRef.current;
-    const playerInputs = [];
+    const playerInputs = playerInputsRef.current;
     let sequenceNumber = 0;
     function OnupdatePlayer(backendPlayers, room) {
 
@@ -126,9 +135,9 @@ export default function Game() {
   
   //##########Projectiles/spells##########################################################################################
   
-  const frontEndProjectiles = {};
-  socket.on('updateProjectiles', (backendProjectiles) => {
-    for (const id in backendProjectiles) {
+  const frontEndProjectiles = frontEndProjectilesRef.current;
+  function OnupdateProjectiles (backendProjectiles) {
+     for (const id in backendProjectiles) {
       const backendProjectile = backendProjectiles[id];
   
       if (!frontEndProjectiles[id]) {
@@ -143,13 +152,15 @@ export default function Game() {
         frontEndProjectiles[id].y = backendProjectile.y;
       }
     }
-  });
+  }
+  socket.on('updateProjectiles', OnupdateProjectiles );
   //####SPELLS#############################################################################################
     let direction = {
       x: 0,
       y: 0
     };
 
+    //kanske ändra 
     let lastValidDirection = { x: 1, y: 0 }; // Remember last direction swiped
     let choosen_spell = "fireball";
     let spelllist = [];
@@ -413,7 +424,7 @@ function loop(t) {
      
   }
 
-  requestAnimationFrame(loop);
+  //requestAnimationFrame(loop);
   // canvas.drawImage(player.image, player.x, player.y);
   // player.draw();
   // console.log(player);
@@ -425,7 +436,7 @@ function loop(t) {
 
 setInterval(() => {
  
-  //requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
   // console.log("inputs:", playerInputs);
 }, 15);
 
@@ -440,7 +451,8 @@ setInterval(() => {
   b3.Eventen();
 
   return () => {
-      //socket.off('map', onConnect);
+      socket.off('map', mapOn);
+      socket.off('updateProjectiles', OnupdateProjectiles );
 
   };
   },[])
