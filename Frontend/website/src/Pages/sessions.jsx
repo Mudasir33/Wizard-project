@@ -62,13 +62,15 @@ export default function Session() {
 
 return(
 <div name="main_session">
-    <h2>Session</h2>
+    <h2 name= "sessions">Session</h2>
 
-
+<label name = "sessions" htmlFor="username">Username: </label>
+<input name = "username" type="text" id="username" placeholder="Enter Username"></input>
+<br></br>
     <table>
         <thead>
         <tr>
-            <th>Room</th>
+            <th>ROOM</th>
             <th>Players</th>
             <th>Ongoing</th>
             <th>JOIN</th>
@@ -82,16 +84,15 @@ return(
                 <td>{room.id}</td>
                 <td>{room.players.length}</td>
                 <td>{ongoing(room)}</td>
-                <td><button onClick={() => joinroom(room.id) } >JOIN</button></td>
+                <td><button  name = "sessions" onClick={() => joinroom(room.id) } >JOIN</button></td>
                 </tr>
             ))}
         </tbody>
 
 
     </table>
-<label htmlFor="username">Username: </label> <br></br>
-<input type="text" id="username" name="username" placeholder="Enter Username"></input>
-<button onClick={() => nav("/Guide")} >Guide</button>
+
+<button onClick={() => nav("/")} >Back</button>
 
 
 

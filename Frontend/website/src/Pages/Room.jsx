@@ -32,8 +32,10 @@ function leaveroom(roomkey){
     console.log("leave room")
     const player = user.getplayer()
     socket.emit("room_leave", roomkey, player)
+     
 
 }
+
 
 
 
@@ -77,7 +79,7 @@ useEffect(()=> {
             });
     socket.on("leftroom", (data)=>{
         console.log("LEFTROOM", data)
-         nav("/", {state: data})
+         nav("/Sessions")
 
     }
 )

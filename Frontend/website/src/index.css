@@ -2,6 +2,9 @@
   font-family:  'Press Start 2P';
   line-height: 1.5;
   font-weight: 400;
+  height: 100%;
+  margin: 0;
+
 
   color-scheme: light dark;
   color: white;
@@ -10,37 +13,147 @@
   background-image: url(assets/content.png);
   background-size: cover;
   background-position: center;
+  
 }
+
+
+
+#header {
+  text-align: center;
+  color:White;
+  font-size: 250%;
+}
+
+#homeWizard {
+  display: flex;
+  justify-content: center;
+  
+}
+
+#menuContainer {
+  text-align: center;
+  width: 75%;
+  margin: 0 auto;
+  padding-bottom: 1%;
+  background-color: rgba(255, 255, 255, 0.4);
+  border-style: solid;
+  border-color: antiquewhite;
+  border-radius: 25px;
+}
+
+
+
+button[name="menu"] {
+  font-size: 75%;
+  background-color: black;
+  color: white;
+  text-align: center;
+  width: 70%;
+  border-radius: 15%;
+  margin: 1% 0;
+}
+
+
+img[name="menu"]{
+  height: 90px;
+}
+
+div[name = "menu"]{
+   background-color:  rgba(0, 0, 0, 0.5);
+  
+  padding: 2vh 2vw;
+  max-height: 100%;
+}
+
+
+
+
+
+
+
+
+
 
 
 
 
 div[name ="main_session"]{
   background-color:  rgba(0, 0, 0, 0.5);
-    max-width: 40em;
-  padding: 10em;
+  width: 75%;
+  margin: 0 auto;
+  margin-top: -2%;
+  padding: 1vh 1vw;
+  height: 100%;
+}
+
+h2[name= "sessions"]{
+  margin-top: -1%;
+  text-align: center;
+  color:White;
+  font-size: 200%;
+
+ 
 }
 
 table{
-  text-align: center;
-  ;
+  margin: 0 auto;
+  border-color: white;
 
 }
-th{
 
-  font-size: 1.5em;
-  padding: 1em;
+th{
+  text-align: center;
+  font-size: 80%;
+
   
 }
+
 td{
-  font-size: 0.5em;
+  width: 7%;
+  
+  margin: 0 auto;
+  font-size: 60%;
+}
+
+label[name= "sessions"]{
+
+  font-size: 90%;
 }
 
 
-h2{
-  font-size: 3em;
-  text-align: center;
+
+
+input[name = "username"]{
+
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 80%;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  
 }
+
+
+button[name= sessions] {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  transition: border-color 0.25s;
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -56,8 +169,12 @@ div[name ="main_room"]{
 
 div[name ="main_guide"]{
   background-color:  rgba(0, 0, 0, 0.5);
-  width: 120em;
-  padding: 5em;
+  height: 80vh;
+  max-width: 90vw;
+  padding: 2vj;
+  overflow-y: auto;
+  overflow-x: hidden;
+
 }
 
 
@@ -65,33 +182,28 @@ div[name ="main_guide"]{
 
 
 h1[name = "guide"] {
-  font-weight: 300;
-
-   margin-bottom: 20px;
+  text-align: center;
+  color:White;
+  font-size: 250%;
 }
 
 p[name = "guide"] {
-   font-weight: 200;
+  font-size: 100%;
 
-   margin-bottom: 20px;
 }
 
 h2[name = "guide"]{
-   font-weight: 100;
-
-   margin-bottom: 20px;
-
+   font-size: 160%;
 }
 
 h3[name = "guide"]{
    font-weight: 100;
-  font-size: 2em;
+   font-size: 100%;
 
    margin-bottom: 20 px;
 }
 li[name = "guide"]{
-  font-size: large;
-
+ font-size: 100%;
    margin-bottom: 20 px;
 }
 
@@ -111,19 +223,9 @@ img[name="guide"]{
 
 
 
-
-
-
-a:hover {
-  color: #535bf2;
-}
-
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  display: block;
+  overflow: hidden;
 }
 
 
@@ -152,8 +254,7 @@ thead, tbody {
 input {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: 80%;
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
@@ -161,13 +262,24 @@ input {
   
 }
 
-table{
-  text-align: right;
+canvas[name= "game"]{
+
+
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  width: 100%;
 }
 
 
-label{
-  font-size: 1.5em;
+div[name = "game"]{
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 
@@ -184,12 +296,3 @@ label{
 
 }
 
-th{
-
-  font-size: 1.5em;
-  padding: 1em;
-  
-}
-td{
-  font-size: 1.3em;
-}

@@ -27,7 +27,6 @@ body {
 }
 
 button {
-  font-family: 'Pixelify Sans';
   font-size: 200%;
   background-color: black;
   color: white;
@@ -40,4 +39,9 @@ button {
 #homeWizard {
   display: flex;
   justify-content: center;
+}
+div[name = "menu"]{
+    background-color: rgba(255, 255, 255, 0);
+    width: 75%;
+
 }

@@ -265,6 +265,7 @@ async function startServer() {
                     if (sessions[room].players.length == 1) {
                         sessions[room].ongoing = false;
                     }
+                    console.log("leftroom")
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
 

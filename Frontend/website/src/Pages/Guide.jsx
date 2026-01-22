@@ -16,12 +16,12 @@ export default function Guide(){
 
 
 return(
-<div style={ {maxWidth: "25rem", margin:"auto"
-}} name = "main_guide">
+<div  name = "main_guide">
+ 
 
-<h1>Wizzard Royale Game Guide</h1>
+<h1 name = "guide">Wizzard Royale Game Guide</h1>
 
-<p>
+<p name = "guide" >
 Wizard Royale is a 2-10 player battle royale.<br />
 Where your goal is to win by beginning with the last person standing.
 </p>
@@ -37,7 +37,7 @@ Where your goal is to win by beginning with the last person standing.
         <li name = "guide"> Aiming the shooting joystick the way you want to shoot and with relase of the you stick it shoots</li>
 
 
-        <h3 name = "guide" > 2 kind of Abilites:</h3>
+        <h2 name = "guide" > 2 kind of Abilites:</h2>
          <img name="guide" src={normalgif} alt="normal attack"/>
         <li name = "guide">Normal/standard ability</li>
 
