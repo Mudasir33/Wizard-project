@@ -5,23 +5,27 @@ import { Player } from "../../../game/Player.js";
 import { Joystick }  from "../../../game/joystick.js";
 import { Button }  from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
-
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 export default function Game() {
+  //should help with 
   const { state: roomkey } = useLocation();
+  const frontendPlayersRef= useRef({});
   const canvasRef = useRef(null);
+  const startedRef = false;
+  const keysRef = useRef({});
+  let gameLoopActive = false;
   console.log("ROOM",roomkey);
   
-  socket.emit("gameStart", roomkey)
+
 
 
   useEffect(()=>{
-  
+     socket.emit("gameStart", roomkey)
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext('2d');
-    canvas.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
     
@@ -32,22 +36,34 @@ export default function Game() {
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
     let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+
+
     
 
-
+/*
     socket.on('map', (loadmap) => {
       map = loadmap;
        console.log('tesst', map.layers[3].length);
+       gameLoopActive = true;
       requestAnimationFrame(loop);
     });
-    
-    const frontendPlayers = {};
-    
-    
-    
-    socket.on('updatePlayers', (backendPlayers, roomkey) => {
+   */ 
+    function mapOn(loadmap ) {
+      map = loadmap;
+      gameLoopActive = true;
+        
+          
+          requestAnimationFrame(loop);
+        
       
-      
+    }
+    socket.on("map", mapOn);
+    const frontendPlayers = frontendPlayersRef.current;
+    const playerInputs = [];
+    let sequenceNumber = 0;
+    function OnupdatePlayer(backendPlayers, room) {
+
+            
       for (const id in backendPlayers) {
         const backendPlayer = backendPlayers[id];
         //console.log(backendPlayer);
@@ -89,16 +105,16 @@ export default function Game() {
         }
         // console.log(frontendPlayers);
       }
-  });
+      
+    }
+
+    socket.on("updatePlayers", OnupdatePlayer);
 
   
-  
-  const keys = {};
+  const keys = keysRef.current;
+  //maybe needs to be closed after a render?
   window.addEventListener('keydown', (e,) => {
-    
     keys[e.key] = true;
-    
-   
   });
   
   window.addEventListener('keyup', (e) => {
@@ -106,9 +122,8 @@ export default function Game() {
     socket.emit('keyup', e.code,roomkey);
   });
   
-  const playerInputs = [];
-  let sequenceNumber = 0;
-  let gameLoopActive = false;
+
+  
   //##########Projectiles/spells##########################################################################################
   
   const frontEndProjectiles = {};
@@ -195,8 +210,12 @@ export default function Game() {
   
     // Update player position
     if (frontendPlayers[socket.id]) {
-      frontendPlayers[socket.id].x += dx * frontendPlayers[socket.id].speed * 0.015;
-      frontendPlayers[socket.id].y += dy * frontendPlayers[socket.id].speed * 0.015;
+      //if statement om x och y 
+      
+      const player = frontendPlayers[socket.id];
+      const speed = player.speed || 100;
+      player.x += dx * speed * 0.015;
+      player.y += dy * speed * 0.015;
   
       // Send combined movement input to server (always, even when 0, to stop movement)
       
@@ -224,7 +243,7 @@ export default function Game() {
     if (previous_state == true && spellJoystick.isPressed == false) {
       // Joystick was released - use LAST VALID direction, not current (which is now 0)
       console.log("SHOOT TRIGGERED! Direction:", lastValidDirection);
-      spellCreate(choosen_spell, lastValidDirection, roomkey);
+      spellCreate(choosen_spell, lastValidDirection, roomkey); //spell output
 
       if (choosen_spell != "fireball") {
         console.log("changeback to fireball");
@@ -271,26 +290,33 @@ export default function Game() {
       choosen_spell = "test";
     }
   } 
+
 function loop(t) {
-  ctx.fillStyle = "white";
-  ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (!gameLoopActive || !map || !frontendPlayers[socket.id]) return;
   
-  // Center camera on player (same behavior on mobile and desktop)
-  const cameraOffsetX = canvas.width / 2;
-  const cameraOffsetY = canvas.height / 2;
+  try {
+    updatePlayer();
+    
+    ctx.fillStyle = "white";
+    ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Center camera on player (same behavior on mobile and desktop)
+    const cameraOffsetX = canvas.width / 2;
+    const cameraOffsetY = canvas.height / 2;
 
-  // Recompute scale dynamically to keep consistent view across resolutions
-  scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+    // Recompute scale dynamically to keep consistent view across resolutions
+    scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
-  ctx.translate(
-    cameraOffsetX - frontendPlayers[socket.id].x * scaleup_constant,
-    cameraOffsetY - frontendPlayers[socket.id].y * scaleup_constant
-  );
+    ctx.translate(
+      cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
+      cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
+    );
 
 
-  const height = map.layers[0].grid.length;
-  const width = map.layers[0].grid[0].length;
+  const height = map.layers[0]?.grid?.length || 0;
+  const width = map.layers[0]?.grid?.[0]?.length || 0;
+  if (height === 0 || width === 0) return;
   const tileWH = 16;
   const tilesPerRow = tilesetImage.width / 16;
 
@@ -338,11 +364,35 @@ function loop(t) {
     const projectile = frontEndProjectiles[id];
     projectile.draw(ctx, scaleup_constant);
   }
+
+
+  //Old local spell drawing code (now handled by server updates)
+  /* Draw and update spells with proper camera offset (still in world transform)
+  const camX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
+  const camY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
+  
+
+   Old local spell drawing code (now handled by server updates)
+  for (let i = spelllist.length - 1; i >= 0; i--) {
+    try {
+      const s = spelllist[i];
+      if (s) {
+        s.draw(ctx, scaleup_constant);
+        s.update();
+      }
+    } catch (error) {
+      console.error("Error with spell:", error);
+    }
+  }
+  */
+
   // Reset canvas transformation to draw UI (joystick) in screen coordinates
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   
   // Draw joystick (fixed to screen, not affected by camera)
   joystick.draw(ctx);
+
+  // Draw spell joystick and buttons (fixed to screen, not affected by camera)
   spellJoystick.draw(ctx);
   b1.draw(ctx);
   b2.draw(ctx);
@@ -360,28 +410,39 @@ function loop(t) {
         player2.takeDamage(1);
       }
     }
+     
   }
 
-
+  requestAnimationFrame(loop);
   // canvas.drawImage(player.image, player.x, player.y);
   // player.draw();
   // console.log(player);
+  } catch (error) {
+    console.error("Error in loop:", error);
+  }
 }
 
+
 setInterval(() => {
-  updatePlayer();
-  requestAnimationFrame(loop);
+ 
+  //requestAnimationFrame(loop);
   // console.log("inputs:", playerInputs);
 }, 15);
 
 //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
 // Setup button event handlers
+
   b1.setCanvas(canvas);
   b2.setCanvas(canvas);
   b3.setCanvas(canvas);
   b1.Eventen();
   b2.Eventen();
   b3.Eventen();
+
+  return () => {
+      //socket.off('map', onConnect);
+
+  };
   },[])
  
   
@@ -390,7 +451,6 @@ setInterval(() => {
 
   return (
     <div>
-      <h2>Room: {roomkey}</h2>
       <canvas ref={canvasRef}></canvas>
     </div>
   );
