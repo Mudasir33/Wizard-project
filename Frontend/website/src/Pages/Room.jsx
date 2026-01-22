@@ -37,6 +37,16 @@ function leaveroom(roomkey){
 
 
 
+function startGame(roomkey) {
+    
+    console.log("Game is starting for room:", roomkey);
+    socket.emit("Game", roomkey)
+
+   
+    
+    
+}
+
 
 
 
@@ -72,7 +82,14 @@ useEffect(()=> {
     }
 )
 
-       
+    socket.on("gameRoom", (data)=>{
+        console.log("Game room", data)
+        //nav("/game", {state: data})
+        //window.location.href = `http://localhost:3000?room=${data}`
+        
+         nav("/game", {state: data})
+
+    });   
           
        }, [])
    
@@ -97,7 +114,7 @@ return(
 
         <tbody>
           
-            {roomData.players.map((player, i) =>(
+            {Object.values(roomData.players).map((player, i) => (
                 <tr key ={i}>
                 <td>{player.username}</td>
                 <td>{player.color}</td>
@@ -111,6 +128,7 @@ return(
     </table>
     <button onClick={() => leaveroom(roomkey)}> Leave room</button>
     <button onClick={() => pressed_ready(roomkey)}> Ready</button>
+    <button onClick={() =>startGame(roomkey)}> Start Game</button>
     
 </div>
 

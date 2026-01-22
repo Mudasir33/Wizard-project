@@ -1,3 +1,5 @@
+import fire from "../../Assets/Spells/fireball.gif";
+import wizard from "../../Assets/Images/Wizard.png";
 export class Spell {
     constructor(x, y, type, direction) {
         this.x = x;
@@ -54,13 +56,13 @@ export class Spell {
 export const spell_list = {
     fireball: {
         
-        texture: "./Assets/Spells/fireball.gif",
+        texture: fire,
         speed: 2,
         damage: 12,
         size: 40
     },
         test: {
-        texture: "./Assets/Images/Wizard.png", //just a test for button
+        texture: wizard, //just a test for button
         speed: 2,
         damage: 12,
         size: 40

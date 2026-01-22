@@ -5,7 +5,7 @@ import './App.css'
 import Sessions from './Pages/sessions'
 import Room from "./Pages/Room";
 import Guide from "./Pages/Guide";
-
+import Game from "./Pages/Game";
 export default function App() {
 
 
@@ -15,6 +15,7 @@ export default function App() {
         <Route path ="/" element={<Sessions></Sessions>}></Route>
         <Route path="/room" element={<Room></Room>}></Route>
           <Route path="/Guide" element={<Guide></Guide>}></Route>
+           <Route path="/game" element={<Game></Game>}></Route>
       </Routes>
     </BrowserRouter>
 

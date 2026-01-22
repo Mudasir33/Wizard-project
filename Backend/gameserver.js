@@ -30,13 +30,15 @@ const x_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; //temporay
 const y_kordinater = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 
+
 let sessions = {
-    'Room 1': { id: 'Room 1', players: [], ongoing: false },
-    'Room 2': { id: 'Room 2', players: [], ongoing: false },
-    'Room 3': { id: 'Room 3', players: [], ongoing: false },
-    'Room 4': { id: 'Room 4', players: [], ongoing: false },
-    'Room 5': { id: 'Room 5', players: [], ongoing: false },
+    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{},  ongoing: false},
+    'Room 2': { id: 'Room 2',  players: {}, move:{},  backendProjectiles:{},ongoing: false} ,
+    'Room 3': { id: 'Room 3',  players: {}, move:{},backendProjectiles:{},  ongoing: false},
+    'Room 4': { id: 'Room 4',  players: {}, move:{},  backendProjectiles:{},ongoing: false},
+    'Room 5': { id: 'Room 5',  players: {}, move:{},  backendProjectiles:{},ongoing: false},
 };
+
 
 function updateSessions() {
     io.emit('sessions', sessions);
@@ -51,7 +53,7 @@ app.use(express.static('Public'));
 const players = {};
 const playerInput = {};
 const backendProjectiles = {};
-let projectileId = 0;
+let projectileId = 0; ///?
 
 
 function wallCollision(map2d, player_x, player_y, player_width, player_height) {
@@ -83,10 +85,28 @@ async function startServer() {
 
     io.on('connection', (socket) => {
         console.log('connected:', socket.id);
-        io.emit('map', Map2d);
+        socket.on('Game', (room) => {
+        
+        const test_room = room;   
+        socket.join(room);         
+        console.log("Game starting:", room);
+        //console.log("GAME PLAYERS", sessions[room].players[socket.id]);
+        
+        //io.emit('updatePlayers', sessions[room].players);
+        socket.emit('gameRoom', room);
+       
+        });
+
+
+        socket.on('gameStart', (room) => {  
+            io.emit('map', Map2d); 
+            io.to(room).emit('updatePlayers', sessions[room].players[socket.id]);
+            
+        });
+
 
         const number = Object.values(players).length + 1;
-
+        /*
         players[socket.id] = {
             x: 500 * Math.random(), // random spawn
             y: 500 * Math.random(), // random spawn
@@ -99,15 +119,7 @@ async function startServer() {
 
         playerInput[socket.id] = { dx: 0, dy: 0 };
         console.log(players);
-
-        io.emit('updatePlayers', players);
-
-        console.log('server your player nyumber:', number);
-        socket.emit('playerNumber', number);
-
-        socket.on('uppos', (data) => {
-            socket.broadcast.emit('playermoved', data);
-        });
+        */
 
         socket.on('disconnect', (reason) => {
             console.log(reason);
@@ -120,35 +132,33 @@ async function startServer() {
             io.emit('updatePlayers', players);
         });
 
-        socket.on('keydown', ({ keycode, sequenceNumber }) => {
-            players[socket.id].sequenceNumber = sequenceNumber;
-            if (!playerInput[socket.id]) return;
-            if (keycode == 'KeyW') playerInput[socket.id].dy = -1;
-            if (keycode == 'KeyS') playerInput[socket.id].dy = 1;
-            if (keycode == 'KeyA') playerInput[socket.id].dx = -1;
-            if (keycode == 'KeyD') playerInput[socket.id].dx = 1;
+        socket.on('keyup', (key,room) => {
+            //console.log(room);
+            if (!sessions[room].move[socket.id]) return;
+            if (key == 'KeyW' || key == 'KeyS') sessions[room].move[socket.id].dy = 0;
+            if (key == 'KeyA' || key == 'KeyD') sessions[room].move[socket.id].dx = 0;
         });
 
-        socket.on('keyup', (key) => {
-            if (!playerInput[socket.id]) return;
-            if (key == 'KeyW' || key == 'KeyS') playerInput[socket.id].dy = 0;
-            if (key == 'KeyA' || key == 'KeyD') playerInput[socket.id].dx = 0;
-        });
-
-        socket.on('movement', ({ dx, dy, sequenceNumber }) => {
-            players[socket.id].sequenceNumber = sequenceNumber;
-            if (!playerInput[socket.id]) return;
-            playerInput[socket.id].dx = dx;
-            playerInput[socket.id].dy = dy;
+        socket.on('movement', ({ dx, dy, sequenceNumber,roomkey }) => {
+            
+            
+            //console.log("MOVEMENT ROOM", roomkey);
+           sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;
+            if (! sessions[roomkey].move[socket.id]) return;
+            sessions[roomkey].move[socket.id].dx = dx;
+            sessions[roomkey].move[socket.id].dy = dy;
         });
         //###############Projectiles##########################
-        socket.on('spellCast', ({ spellName, spellDirection, x, y }) => {
+        socket.on('spellCast', ({ spellName, spellDirection, x, y, roomkey }) => {
             projectileId += 1;
-            backendProjectiles[projectileId] = {
+            console.log("SPELL", roomkey);
+            
+            sessions[roomkey].backendProjectiles[projectileId] = {
                 spellName: spellName,
                 spellDirection: spellDirection,
                 x: x,
                 y: y,
+                roomkey,
                 playerId: socket.id,
                 speed: 100
             };
@@ -161,7 +171,7 @@ async function startServer() {
             let username_taken = false;
 
             if (sessions[room].ongoing == true) {
-                console.log('SERVER: room ongoing');
+                console.log('SERVER: room ongoing')
                 socket.emit('joinerror', 'ROOM already ongoing');
                 return
             }
@@ -194,20 +204,20 @@ async function startServer() {
 
             const index = sessions[room].players.length;
 
-            const player = {
+            sessions[room].players[socket.id] = {
                 username: p.username,
                 color: colors[index],
                 ready: false,
-                x: x_kordinater[index],
-                y: y_kordinater[index],
+                x: 500 * Math.random(), // random spawn
+                y: 500 * Math.random(), // random spawn
                 health: 100,
                 alive: true,
-                // this.image = new Image();
-                // this.image.src = 'PixelCharacter.png';
+                id: number,
                 speed: 100,
+                sequenceNumber: 0,
+                
             };
-
-            sessions[room].players.push(player);
+            sessions[room].move[socket.id] = { dx: 0, dy: 0 };
             io.emit('sessions', sessions);
             socket.emit('joined', room);
         });
@@ -267,37 +277,50 @@ async function startServer() {
 
 setInterval(() => {
     // Update all player positions based on input
-    for (const id in players) {
-        const player = players[id];
-        const input = playerInput[id];
-        // onsole.log("input:", input);
-        if (!input) continue;
+    for (const [roomName, roomInfo] of Object.entries(sessions)) {
+        const players = roomInfo.players;
+        const playerInput = roomInfo.move;
+        const backendProjectiles = roomInfo.backendProjectiles;
 
-        let dx = input.dx;
-        let dy = input.dy;
+        //console.log(playerInput);
+        
+        for (const id in players) {
+            const player = players[id];
+            const input = playerInput[id];
+            //console.log("input:", players);
+            if (!input) continue;
 
-        if (dx !== 0 && dy !== 0) {
-            const inv = 1 / Math.sqrt(2);
-            dx *= inv;
-            dy *= inv;
+            let dx = input.dx;
+            let dy = input.dy;
+
+            if (dx !== 0 && dy !== 0) {
+                const inv = 1 / Math.sqrt(2);
+                dx *= inv;
+                dy *= inv;
+            }
+
+            player.x += dx * player.speed * 0.015;
+            player.y += dy * player.speed * 0.015;
         }
 
-        player.x += dx * player.speed * 0.015;
-        player.y += dy * player.speed * 0.015;
-    }
-    // Update all projectile positions
-    for (const id in backendProjectiles) {
-        const projectile = backendProjectiles[id];
-        const direction = projectile.spellDirection;
-        let dx = direction.x;
-        let dy = direction.y;
+            // Update all projectile positions
+        for (const id in backendProjectiles) {
+            const projectile = backendProjectiles[id];
+            const direction = projectile.spellDirection;
+            let dx = direction.x;
+            let dy = direction.y;
 
-        projectile.x += dx * projectile.speed * 0.015;
-        projectile.y += dy * projectile.speed * 0.015;
-        
+            projectile.x += dx * projectile.speed * 0.015;
+            projectile.y += dy * projectile.speed * 0.015;
+            
+        }
+     //console.log(players);
+     io.to(roomName).emit('updatePlayers', players);
+     io.to(roomName).emit('updateProjectiles', backendProjectiles);
     }
-    io.emit('updateProjectiles', backendProjectiles);
-    io.emit('updatePlayers', players);
+   
+    
+   
 }, 15);
 
 startServer().catch(console.error);

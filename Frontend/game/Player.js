@@ -1,3 +1,5 @@
+
+import Character from "../../Assets/character/PixelCharacter.png";
 export class Player {
   constructor(x, y) {
     this.username = '';
@@ -10,7 +12,7 @@ export class Player {
     this.maxHealth = 100;
     this.alive = true;
     this.image = new Image();
-    this.image.src = './Assets/character/PixelCharacter.png';
+    this.image.src = Character;
     this.speed = 100;
 
     // Hitbox dimensions (adjust as needed)
