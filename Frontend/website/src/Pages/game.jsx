@@ -165,27 +165,38 @@ export default function Game() {
     let choosen_spell = "fireball";
     let spelllist = [];
     let previous_state = false;
-    
-    // Initialize joystick
-    const joystickRadius = Math.min(canvas.width, canvas.height) * 0.08;
-    const joystickX = canvas.width * 0.2;
-    const joystickY = canvas.height * 0.75;
-    const joystick = new Joystick(joystickX, joystickY, joystickRadius);
-    joystick.attachEvents(canvas);
 
-  
-    //####JOYSTICK FOR SPELLS (RIGHT SIDE)#############################################################################################
-    const spellJoystickRadius = Math.min(canvas.width, canvas.height) * 0.08;
-    const spellJoystickX = canvas.width * 0.8;
-    const spellJoystickY = canvas.height * 0.75;
-    const spellJoystick = new Joystick(spellJoystickX, spellJoystickY, spellJoystickRadius);
+    // Sizes (in px, scaled)
+    const JOYSTICK_RADIUS = canvas.width * 0.03;
+    const BUTTON_RADIUS = canvas.width * 0.015;
+
+    // Padding as % of width/height
+    const EDGE_PADDING_X = canvas.width * 0.15;
+    const EDGE_PADDING_Y = canvas.height * 0.3;
+
+    // Joystick positions
+    const joystickX = EDGE_PADDING_X + JOYSTICK_RADIUS;
+    const joystickY = canvas.height - EDGE_PADDING_Y - JOYSTICK_RADIUS;
+    const spellJoystickX = canvas.width - EDGE_PADDING_X - JOYSTICK_RADIUS;
+    const spellJoystickY = canvas.height - EDGE_PADDING_Y - JOYSTICK_RADIUS;
+
+    // Buttons: diagonal/vertical stack to the left and above the right joystick
+    const buttonSpacing = BUTTON_RADIUS * 2;
+    const b1X = spellJoystickX;
+    const b1Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 2.2;
+    const b2X = spellJoystickX - buttonSpacing * 2.2;
+    const b2Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 1.15;
+    const b3X = spellJoystickX - buttonSpacing * 3.2;
+    const b3Y = spellJoystickY;
+
+    // Create UI
+    const joystick = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
+    joystick.attachEvents(canvas);
+    const spellJoystick = new Joystick(spellJoystickX, spellJoystickY, JOYSTICK_RADIUS);
     spellJoystick.attachEvents(canvas);
-    
-    //####BUTTONS FOR SPELLS (NEAR RIGHT JOYSTICK)#############################################################################################
-    const buttonRadius = Math.min(canvas.width, canvas.height) * 0.04;
-    const b1 = new Button((canvas.width - canvas.width * 0.20), (canvas.height * 0.50), buttonRadius, "1", "test", () => changeSpell(1));
-    const b2 = new Button((canvas.width - canvas.width * 0.255), (canvas.height * 0.575), buttonRadius, "2", "Health", null);
-    const b3 = new Button((canvas.width - canvas.width * 0.29), (canvas.height * 0.72), buttonRadius, "3", "Utility", null);
+    const b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
+    const b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
+    const b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
     
   
   function updatePlayer() {
