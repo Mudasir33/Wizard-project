@@ -262,9 +262,8 @@
   <object id="49" x="-0.5" y="409.5" width="16" height="87.5"/>
   <object id="50" x="12" y="-1.5" width="106.5" height="30"/>
   <object id="51" x="113.5" y="29" width="44.5" height="64.75"/>
-  <object id="55" x="158" y="39.75" width="99.25" height="39.5"/>
+  <object id="55" x="158" y="39.75" width="303.25" height="39.5"/>
   <object id="56" x="258.25" y="42.5" width="27.5" height="67.25"/>
-  <object id="57" x="286.5" y="39.5" width="173.833" height="38.75"/>
   <object id="59" x="460.75" y="24" width="20.75" height="38.5"/>
   <object id="60" x="483" y="24.25" width="26" height="55"/>
   <object id="62" x="508.75" y="15.25" width="36.5" height="30.75"/>

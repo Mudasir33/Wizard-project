@@ -32,11 +32,11 @@ const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'pu
 
 
 let sessions = {
-    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{},  ongoing: false},
-    'Room 2': { id: 'Room 2',  players: {}, move:{},  backendProjectiles:{},ongoing: false} ,
-    'Room 3': { id: 'Room 3',  players: {}, move:{},backendProjectiles:{},  ongoing: false},
-    'Room 4': { id: 'Room 4',  players: {}, move:{},  backendProjectiles:{},ongoing: false},
-    'Room 5': { id: 'Room 5',  players: {}, move:{},  backendProjectiles:{},ongoing: false},
+    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
+    'Room 2': { id: 'Room 2',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false} ,
+    'Room 3': { id: 'Room 3',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
+    'Room 4': { id: 'Room 4',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
+    'Room 5': { id: 'Room 5',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
 };
 
 
@@ -56,25 +56,9 @@ const backendProjectiles = {};
 let projectileId = 0; ///?
 
 
-function wallCollision(map2d, player_x, player_y, player_width, player_height) {
-    const obj = Map2d.objectLayers[0].obj;
 
-    for (let i = 0; i < obj.objects.length; i++) {
-        const x = obj.obj.object[i].x;
-        const y = obj.obj.object[i].y;
-        const width = obj.obj.object[i].width;
-        const height = obj.obj.object[i].height;
 
-        if (
-            player_x < x + width &&
-            player_x + player_width > x &&
-            player_y < y + height &&
-            player_y + player_height > y
-        ) {
-            console.log('Collision Detected');
-        }
-    }
-}
+
 
 const MAX_ROOM = 5;
 
@@ -86,14 +70,12 @@ async function startServer() {
     io.on('connection', (socket) => {
         console.log('connected:', socket.id);
         socket.on('Game', (room) => {
-        
-        const test_room = room;   
-        socket.join(room);         
-        console.log("Game starting:", room);
-        //console.log("GAME PLAYERS", sessions[room].players[socket.id]);
-        
-        //io.emit('updatePlayers', sessions[room].players);
-        socket.emit('gameRoom', room);
+            
+            const test_room = room;   
+            socket.join(room);    
+            sessions[room].map = Map2d;
+            console.log("Game starting:", room);
+            socket.emit('gameRoom', room);
        
         });
 
@@ -209,7 +191,7 @@ async function startServer() {
                 color: colors[index],
                 ready: false,
                 x: 500 * Math.random(), // random spawn
-                y: 500 * Math.random(), // random spawn
+                y: 500 * Math.random(), // random spawn           
                 health: 100,
                 alive: true,
                 id: number,
@@ -273,8 +255,41 @@ async function startServer() {
                 }
             }
         });
+
+
     }); // CONNECTION SOCKET
 }
+
+
+
+
+// checks if character is hitting one of the walls 
+   function wallCollison(object, player) {
+    if (object==null) return; 
+      const obj = object.objectLayers[0].obj; 
+        const player_x =  player.x;
+        const player_y = player.y;
+        const player_width =  11;
+        const player_height =  15;
+        for (let j = 0; j < obj.objects.length; j++) {
+            const wallX = obj.objects[j].x;  
+
+            const wallY = obj.objects[j].y;
+            const wallWidth = obj.objects[j].width;
+            const wallHeight = obj.objects[j].height;
+            
+            if (
+                player_x < wallX + wallWidth &&
+                player_x + player_width > wallX &&
+                player_y < wallY + wallHeight &&
+                player_y + player_height > wallY
+            ) {                
+                return true;
+            }
+        }
+        
+        return false;
+    }
 
 setInterval(() => {
     // Update all player positions based on input
@@ -282,12 +297,17 @@ setInterval(() => {
         const players = roomInfo.players;
         const playerInput = roomInfo.move;
         const backendProjectiles = roomInfo.backendProjectiles;
+        const obj = roomInfo.map
 
-        //console.log(playerInput);
-        
+        //console.log("map", roomInfo.map.objectLayers[0].obj);
+
         for (const id in players) {
             const player = players[id];
             const input = playerInput[id];
+
+
+            
+
             //console.log("input:", players);
             if (!input) continue;
 
@@ -299,9 +319,29 @@ setInterval(() => {
                 dx *= inv;
                 dy *= inv;
             }
+                            
+                player.x += (dx * player.speed * 0.015); //this is more of a quick fix that may need changes in the future
+                player.y += (dy * player.speed * 0.015); 
+            if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
+                player.x += (dx * player.speed * 0.015) ;
+                player.y += (dy * player.speed * 0.015);
 
-            player.x += dx * player.speed * 0.015;
-            player.y += dy * player.speed * 0.015;
+                
+            }else{
+                //if collision is true from input the characters will move away from the wall
+                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
+                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
+                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
+                   
+                }
+
+                
+                
+                
+            }
+
+             
+
         }
 
             // Update all projectile positions
@@ -310,12 +350,13 @@ setInterval(() => {
             const direction = projectile.spellDirection;
             let dx = direction.x;
             let dy = direction.y;
-
+            
             projectile.x += dx * projectile.speed * 0.015;
             projectile.y += dy * projectile.speed * 0.015;
             
         }
-     //console.log(players);
+     
+
      io.to(roomName).emit('updatePlayers', players);
      io.to(roomName).emit('updateProjectiles', backendProjectiles);
     }

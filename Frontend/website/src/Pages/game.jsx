@@ -341,7 +341,7 @@ function loop(t) {
   if (height === 0 || width === 0) return;
   const tileWH = 16;
   const tilesPerRow = tilesetImage.width / 16;
-
+   
   // console.log("grid test sx:",  (36 % tilesPerRow)*16); //y
   // console.log("grid test sy:",  Math.floor(36/tilesPerRow)*16);
   // console.log("tiledRow: ",tilesetImage.width/16 );
@@ -464,7 +464,7 @@ setInterval(() => {
   return () => {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles );
-
+      socket.off("updatePlayers", OnupdatePlayer);
   };
   },[])
  
