@@ -14,6 +14,7 @@ const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
 const { log } = require('console');
+const { spawn } = require('child_process');
 
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
@@ -55,7 +56,8 @@ const playerInput = {};
 const backendProjectiles = {};
 let projectileId = 0; ///?
 
-
+let spawn_x = 50;
+let spawn_y = 125;
 
 
 
@@ -132,6 +134,8 @@ async function startServer() {
         });
         //###############Projectiles##########################
         socket.on('spellCast', ({ spellName, spellDirection, x, y, roomkey }) => {
+
+            if (sessions[roomkey].players[socket.id].alive === false) return; // dead players can't shoot
             projectileId += 1;
             //console.log("SPELL", roomkey);
             
@@ -145,6 +149,7 @@ async function startServer() {
                 playerId: socket.id,
                 speed: 100
             };
+
             console.log(sessions[roomkey].backendProjectiles);
         });
 
@@ -189,20 +194,21 @@ async function startServer() {
             }
 
             const index = sessions[room].players.length;
-
             sessions[room].players[socket.id] = {
                 username: p.username,
                 color: colors[index],
                 ready: false,
-                x: 500 * Math.random(), // random spawn
-                y: 500 * Math.random(), // random spawn           
+                x: spawn_x, 
+                y: spawn_y,         
                 health: 100,
                 alive: true,
                 id: number,
                 speed: 100,
                 sequenceNumber: 0,
-                
             };
+            spawn_x += 30;
+            
+
             sessions[room].move[socket.id] = { dx: 0, dy: 0 };
             io.emit('sessions', sessions);
             socket.emit('joined', room);
@@ -295,6 +301,26 @@ async function startServer() {
         return false;
     }
 
+
+    function ProjectilePlayerCollision(projectile, player) {
+        const projectile_x = projectile.x;
+        const projectile_y = projectile.y;
+        const projectile_size = 5; // assuming projectile is a square of size 5x5
+        const player_x = player.x;
+        const player_y = player.y;
+        const player_width = 11;
+        const player_height = 15;
+        if (
+            projectile_x < player_x + player_width &&
+            projectile_x + projectile_size > player_x &&
+            projectile_y < player_y + player_height &&
+            projectile_y + projectile_size > player_y
+        ) {
+            return true;
+        }
+        return false;
+    }
+
 setInterval(() => {
     // Update all player positions based on input
     for (const [roomName, roomInfo] of Object.entries(sessions)) {
@@ -311,7 +337,7 @@ setInterval(() => {
 
 
             
-
+             
             //console.log("input:", players);
             if (!input) continue;
 
@@ -332,6 +358,7 @@ setInterval(() => {
 
                 
             }else{
+                if (player.alive === false) break;
                 //if collision is true from input the characters will move away from the wall
                 if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
                    player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
@@ -357,12 +384,29 @@ setInterval(() => {
             
             projectile.x += dx * projectile.speed * 0.015;
             projectile.y += dy * projectile.speed * 0.015;
-            
+            // Check for collision with walls
             if (wallCollison(obj, projectile) == true){
                 delete backendProjectiles[id];
             }
+
+            // Check for collision with players
+            for (const pid in players) {
+                if (ProjectilePlayerCollision(projectile, players[pid])) {
+                    if (pid === projectile.playerId || players[pid].alive === false) break; // skip if the projectile hit the shooter or if the player is already dead
+                    console.log("HIT PLAYER", pid);
+                    players[pid].health -= 10; 
+                    delete backendProjectiles[id];
+
+                    console.log("Player health:", players[pid].health);
+                    if (players[pid].health <= 0) {
+                        players[pid].alive = false;
+                        console.log("Player", pid, "has died.");
+                        //delete players[pid];
+                    }
+
+                }
+            }
         }
-     
 
      io.to(roomName).emit('updatePlayers', players);
      io.to(roomName).emit('updateProjectiles', backendProjectiles);

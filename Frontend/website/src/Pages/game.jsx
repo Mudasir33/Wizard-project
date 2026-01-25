@@ -70,6 +70,7 @@ export default function Game() {
     const frontendPlayers = frontendPlayersRef.current;
     const playerInputs = playerInputsRef.current;
     let sequenceNumber = 0;
+
     function OnupdatePlayer(backendPlayers, room) {
 
 
@@ -83,6 +84,8 @@ export default function Game() {
         } else {
           frontendPlayers[id].x = backendPlayer.x;
           frontendPlayers[id].y = backendPlayer.y;
+          frontendPlayers[id].health = backendPlayer.health;
+          frontendPlayers[id].alive = backendPlayer.alive;
 
           if (id === socket.id) {
             // Update existing player position
@@ -429,6 +432,8 @@ export default function Game() {
         b3.draw(ctx);
 
         // Check for collisions between players
+
+        /*
         const playerIds = Object.keys(frontendPlayers);
         for (let i = 0; i < playerIds.length; i++) {
           for (let j = i + 1; j < playerIds.length; j++) {
@@ -441,7 +446,7 @@ export default function Game() {
             }
           }
 
-        }
+        }*/
 
         //requestAnimationFrame(loop);
         // canvas.drawImage(player.image, player.x, player.y);
