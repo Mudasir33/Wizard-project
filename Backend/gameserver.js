@@ -133,7 +133,8 @@ async function startServer() {
         //###############Projectiles##########################
         socket.on('spellCast', ({ spellName, spellDirection, x, y, roomkey }) => {
             projectileId += 1;
-            console.log("SPELL", roomkey);
+            //console.log("SPELL", roomkey);
+            
             
             sessions[roomkey].backendProjectiles[projectileId] = {
                 spellName: spellName,
@@ -144,8 +145,11 @@ async function startServer() {
                 playerId: socket.id,
                 speed: 100
             };
-            //console.log(backendProjectiles);
+            console.log(sessions[roomkey].backendProjectiles);
         });
+
+         
+
 
         // ###################SESSION##################################
         socket.on('join', (p, room) => {
@@ -354,6 +358,9 @@ setInterval(() => {
             projectile.x += dx * projectile.speed * 0.015;
             projectile.y += dy * projectile.speed * 0.015;
             
+            if (wallCollison(obj, projectile) == true){
+                delete backendProjectiles[id];
+            }
         }
      
 
