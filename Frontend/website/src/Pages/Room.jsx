@@ -57,9 +57,6 @@ function startGame(roomkey) {
 
 
 
-
-
-
 export default function Room(){
     
     const nav = useNavigate();
@@ -79,10 +76,20 @@ useEffect(()=> {
             });
     socket.on("leftroom", (data)=>{
         console.log("LEFTROOM", data)
-         nav("/Sessions")
+         nav("/Sessions") })
+
+
+
+      socket.on("players_ready", (data)=>{
+        console.log("reacived players ready")
+        startGame(roomkey)
 
     }
-)
+    
+    );
+
+
+
 
     socket.on("gameRoom", (data)=>{
         console.log("Game room", data)

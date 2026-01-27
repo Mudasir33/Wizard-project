@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
-const { log } = require('console');
+const { log, Console } = require('console');
 const { spawn } = require('child_process');
 
 app.use(express.static('Backend'));
@@ -33,11 +33,11 @@ const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'pu
 
 
 let sessions = {
-    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
-    'Room 2': { id: 'Room 2',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false} ,
-    'Room 3': { id: 'Room 3',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
-    'Room 4': { id: 'Room 4',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
-    'Room 5': { id: 'Room 5',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false},
+    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false, numready:0},
+    'Room 2': { id: 'Room 2',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false, numready:0} ,
+    'Room 3': { id: 'Room 3',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
+    'Room 4': { id: 'Room 4',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
+    'Room 5': { id: 'Room 5',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
 };
 
 
@@ -72,7 +72,6 @@ async function startServer() {
     io.on('connection', (socket) => {
         console.log('connected:', socket.id);
         socket.on('Game', (room) => {
-            
             const test_room = room;   
             socket.join(room);    
             sessions[room].map = Map2d;
@@ -174,26 +173,24 @@ async function startServer() {
 
 
             }
-            if (sessions[room].players.length >= 10) {
+         
+            if (Object.keys(sessions[room].players).length >= 10) {
                 // is room full
                 console.log('SERVER: try to join full room ');
                 socket.emit('joinerror', 'ROOM FULL');
                 return;
             }
 
-            for (let i = 0; i < sessions[room].players.length; i++) {
-                if (p.username == sessions[room].players[i].username) {
+            for (const player of Object.values(sessions[room].players)) {
+                if (p.username == player.username) {
                     console.log('JOIN USERNAME JOIN ERROR');
-                    username_taken = true;
+                    socket.emit('joinerror', 'USERNAMNE ALREADY TAKEN');
+                    return;
                 }
             }
 
-            if (username_taken == true) {
-                socket.emit('joinerror', 'USERNAMNE ALREADY TAKEN');
-                return;
-            }
-
-            const index = sessions[room].players.length;
+         
+            const index = Object.keys(sessions[room].players).length;
             sessions[room].players[socket.id] = {
                 username: p.username,
                 color: colors[index],
@@ -208,7 +205,8 @@ async function startServer() {
             };
             spawn_x += 30;
             
-
+            socket.join(room);
+            console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
             sessions[room].move[socket.id] = { dx: 0, dy: 0 };
             io.emit('sessions', sessions);
             socket.emit('joined', room);
@@ -220,25 +218,25 @@ async function startServer() {
 
         // ##############ROOM##################
         socket.on('ready', (room, p) => {
+            socket.join(room);
             // console.log('Server:', p.username, 'changing ready');
             const players = sessions[room].players;
-            const numplayers = sessions[room].players.length;
-            let numready = 0;
-
-
-
-            for (let i = 0; i < players.length; i++) {
-                if (players[i].username === p.username) {
-                    players[i].ready = p.ready;
-                }
-                if (players[i].ready === true) {
-                    numready = numready + 1;
-                }
-
+            const numplayers = Object.keys(sessions[room].players).length;
+            console.log("ready")
+            if(players[socket.id]  ){
+                if(players[socket.id].ready == false){
+                    players[socket.id].ready = true;
+                sessions[room].numready =  sessions[room].numready +1;}
+                else{
+                     players[socket.id].ready = false;
+                      sessions[room].numready=   sessions[room].numready -1;
             }
-
-            if (numready / numplayers >= 0.51 && numplayers >= 2) {
+        }
+                console.log(sessions[room].numready / numplayers)
+            if (sessions[room].numready / numplayers >= 0.51 && numplayers >= 2) {
                 sessions[room].ongoing = true;
+                console.log("emit players ready")
+            io.to(room).emit("players_ready", room);
             }
             else {
                 sessions[room].ongoing = false;
@@ -248,22 +246,29 @@ async function startServer() {
             io.emit('sessions', sessions);
         });
 
+
+
+
+
+
+
         socket.on('room_leave', (room, p) => {
             const exroom = sessions[room];
-            console.log('player:', p.username, 'leaving room', exroom.id);
-            for (let i = 0; i < exroom.players.length; i++) {
-                if (p.username == exroom.players[i].username) {
-                    sessions[room].players.splice(i, 1);
-                    if (sessions[room].players.length == 1) {
-                        sessions[room].ongoing = false;
-                    }
-                    console.log("leftroom")
+            console.log(exroom)
+            console.log('player:', socket.id ,'leaving room',  exroom.id);
+            console.log(exroom.players[socket.id])
+            if(exroom.players[socket.id]){
+                exroom.players[socket.id].ready = false;
+                delete exroom.players[socket.id]
+                  console.log("leftroom")
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
 
                     return;
-                }
+
             }
+             
+            console.log("failed to leaveroom")
         });
 
 

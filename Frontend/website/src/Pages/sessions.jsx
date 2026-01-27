@@ -36,7 +36,7 @@ function ongoing(room){
 export default function Session() {
     const nav = useNavigate();
     const [sessions, setSessions] = useState({})
-
+    const HELLO = {};
 
     useEffect(()=> {
         socket.emit("update_sessions", null)
@@ -82,7 +82,7 @@ return(
             {Object.values(sessions).map((room, i) =>(
                 <tr key ={i}>
                 <td>{room.id}</td>
-                <td>{room.players.length}</td>
+                <td>{Object.keys(room.players).length}</td>
                 <td>{ongoing(room)}</td>
                 <td><button  name = "sessions" onClick={() => joinroom(room.id) } >JOIN</button></td>
                 </tr>
