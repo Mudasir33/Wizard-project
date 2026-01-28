@@ -76,7 +76,7 @@ useEffect(()=> {
             });
     socket.on("leftroom", (data)=>{
         console.log("LEFTROOM", data)
-         nav("/Sessions") })
+         nav("/") })
 
 
 

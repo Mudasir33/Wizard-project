@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { socket } from "../../../game/Socket";
 import { Player } from "../../../game/Player.js";
@@ -7,6 +7,8 @@ import { Button } from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import { Socket } from "socket.io-client";
+
+import Game_death from "./Game_Death.jsx";
 export default function Game() {
   //should help with 
   const { state: roomkey } = useLocation();
@@ -21,7 +23,7 @@ export default function Game() {
 
   console.log("ROOM", roomkey);
 
-
+  const [showdeath, setdeath] = useState(false);
 
 
   useEffect(() => {
@@ -478,16 +480,24 @@ export default function Game() {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
+      socket.off("death");
     };
   }, [])
 
 
-
-
+  socket.on("death", (data)=>{
+    console.log("you are dead")
+    setdeath(true);
+  }
+  
+  )
 
   return (
     <div className="gamecanvas">
       <canvas ref={canvasRef}></canvas>
+      {showdeath &&(
+        <Game_death></Game_death>
+      )}
     </div>
   );
 }

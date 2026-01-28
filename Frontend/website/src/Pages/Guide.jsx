@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
  import normalgif from '../assets/shooting_normal_temp.gif';
  import specialgif from '../assets/speclial_temp.gif';
 
-export default function Guide(){
+export default function Guide({guideclose}){
      const nav = useNavigate();
-    
-   
+
 
     
     
@@ -81,7 +80,7 @@ there are different kind of items:
 
 
 
-<button onClick={() => nav("/")} name="guide">BACK</button>
+<button onClick={guideclose} name="guide">BACK</button>
 </div>
 
 )

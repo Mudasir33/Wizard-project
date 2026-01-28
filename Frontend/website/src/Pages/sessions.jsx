@@ -2,7 +2,7 @@ import { useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
 import user from "../../../game/User";
 import { socket } from "../../../game/Socket";
-
+import Room from "./Room";
 
 
 
@@ -33,7 +33,7 @@ function ongoing(room){
 
 
 
-export default function Session() {
+export default function Session({closesession}) {
     const nav = useNavigate();
     const [sessions, setSessions] = useState({})
     const HELLO = {};
@@ -92,7 +92,7 @@ return(
 
     </table>
 
-<button onClick={() => nav("/")} >Back</button>
+<button onClick={closesession} >Back</button>
 
 
 

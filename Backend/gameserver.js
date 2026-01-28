@@ -158,20 +158,15 @@ async function startServer() {
         // ###################SESSION##################################
         socket.on('join', (p, room) => {
             console.log('join recavied');
-            let username_taken = false;
-
             if (sessions[room].ongoing == true) {
                 console.log('SERVER: room ongoing')
                 socket.emit('joinerror', 'ROOM already ongoing');
                 return
             }
-
             if (p.username == "") {
                 console.log('SERVER: Username empty');
                 socket.emit('joinerror', 'Put in username');
                 return
-
-
             }
          
             if (Object.keys(sessions[room].players).length >= 10) {
@@ -254,9 +249,7 @@ async function startServer() {
 
         socket.on('room_leave', (room, p) => {
             const exroom = sessions[room];
-            console.log(exroom)
             console.log('player:', socket.id ,'leaving room',  exroom.id);
-            console.log(exroom.players[socket.id])
             if(exroom.players[socket.id]){
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
@@ -363,7 +356,10 @@ setInterval(() => {
 
                 
             }else{
-                if (player.alive === false) break;
+                if (player.alive === false){
+                    socket.emit("playerdead",(player.alive))
+
+                }
                 //if collision is true from input the characters will move away from the wall
                 if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
                    player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
@@ -406,6 +402,7 @@ setInterval(() => {
                     if (players[pid].health <= 0) {
                         players[pid].alive = false;
                         console.log("Player", pid, "has died.");
+                        io.to(pid).emit("death")
                         //delete players[pid];
                     }
 
