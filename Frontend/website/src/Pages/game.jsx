@@ -610,6 +610,15 @@ export default function Game() {
       // console.log("inputs:", playerInputs);
     }, 15);
 
+
+    
+  socket.on("death", (data)=>{
+    console.log("you are dead")
+    setdeath(true);
+  }
+  
+  )
+
     //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
     // Setup button event handlers
 
@@ -629,12 +638,6 @@ export default function Game() {
     };
   }, [])
 
-  socket.on("death", (data)=>{
-    console.log("you are dead")
-    setdeath(true);
-  }
-  
-  )
 
   return (
     <div className="gamecanvas">

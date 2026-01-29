@@ -400,10 +400,7 @@ setInterval(() => {
 
                 
             }else{
-                if (player.alive === false){
-                    socket.emit("playerdead",(player.alive))
-
-                }
+                if (player.alive === false)break
                 //if collision is true from input the characters will move away from the wall
                 if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
                    player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
