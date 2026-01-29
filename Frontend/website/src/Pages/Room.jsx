@@ -109,7 +109,7 @@ useEffect(()=> {
 
 
 return(
-<div name="main_room">
+<div name="main">
     <h2>{roomData.id}</h2>
     <table>
         <thead>

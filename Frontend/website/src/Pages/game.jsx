@@ -192,33 +192,7 @@ export default function Game() {
       keys[e.key] = false;
       socket.emit('keyup', e.code, roomkey);
     });
-    //########## wall collkision ##########################################################################################
-    function wallCollison(object, player) {
-    if (object==null) return; 
-      const obj = object.objectLayers[0].obj; 
-        const player_x =  player.x;
-        const player_y = player.y;
-        const player_width =  11;
-        const player_height =  15;
-        for (let j = 0; j < obj.objects.length; j++) {
-            const wallX = obj.objects[j].x;  
 
-            const wallY = obj.objects[j].y;
-            const wallWidth = obj.objects[j].width;
-            const wallHeight = obj.objects[j].height;
-            
-            if (
-                player_x < wallX + wallWidth &&
-                player_x + player_width > wallX &&
-                player_y < wallY + wallHeight &&
-                player_y + player_height > wallY
-            ) {                
-                return true;
-            }
-        }
-        
-        return false;
-    }
 
 
     //##########Projectiles/spells##########################################################################################
@@ -343,7 +317,6 @@ export default function Game() {
         dy *= inv;
       }
 
-      const obj = map;
       // Update player position
       if (frontendPlayers[socket.id]) {
         //if statement om x och y 
@@ -352,19 +325,6 @@ export default function Game() {
         const speed = player.speed || 100;
         player.x += dx * speed * 0.015;
         player.y += dy * speed * 0.015;
-        if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
-                player.x += (dx * player.speed * 0.015) ;
-                player.y += (dy * player.speed * 0.015);
-
-                
-            }else{
-                //if collision is true from input the characters will move away from the wall
-                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
-                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
-                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
-                   
-                }
-              }
 
         // Send combined movement input to server (always, even when 0, to stop movement)
 
@@ -643,7 +603,7 @@ export default function Game() {
     <div className="gamecanvas">
       <canvas ref={canvasRef}></canvas>
       {showdeath &&(
-        <Game_death></Game_death>
+        <Game_death ></Game_death>
       )}
     </div>
   );

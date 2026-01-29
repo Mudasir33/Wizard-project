@@ -53,7 +53,10 @@ export default function Session({closesession}) {
             console.log("CLIENT: JOINERROR")
             alert(msg);
          })
-    
+     return () => {
+      socket.off('joinerror');
+      socket.off("sessions");
+    };
        
     }, [])
 
@@ -61,7 +64,7 @@ export default function Session({closesession}) {
     
 
 return(
-<div name="main_session">
+<div name="main">
     <h2 name= "sessions">Session</h2>
 
 <label name = "sessions" htmlFor="username">Username: </label>
@@ -92,7 +95,7 @@ return(
 
     </table>
 
-<button onClick={closesession} >Back</button>
+<button onClick={()=> nav("/")} >Back</button>
 
 
 

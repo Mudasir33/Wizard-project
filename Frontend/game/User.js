@@ -67,9 +67,6 @@ function setspeed(speed){
             player.speed =  speed 
  }
 
- function setsocketid(id){
-   player.socketid = id;
- }
 
 
  export default user;

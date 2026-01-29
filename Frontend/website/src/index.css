@@ -77,8 +77,10 @@ div[name = "menu"]{
 
 
 
-div[name ="main_session"]{
+div[name ="main"]{
   background-color:  rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  text-align: center;
   width: 75%;
   height: 100%;
   margin: 0 auto;
@@ -164,6 +166,8 @@ button[name= sessions] {
 
 div[name ="main_room"]{
   background-color:  rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  text-align: center;
 
 }
 
@@ -176,6 +180,8 @@ div[name ="main_guide"]{
   height: 80vh;
   max-width: 90vw;
   padding: 2vj;
+  justify-content: center;
+  text-align: center;
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -211,11 +217,7 @@ li[name = "guide"]{
    margin-bottom: 20 px;
 }
 
-button[name="guide"]{
-  width: 70%;
-  background-color: darkgray;
-  color: black;
-}
+
 
 img[name="guide"]{
   width: 25em;
