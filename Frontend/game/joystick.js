@@ -69,7 +69,7 @@ export class Joystick{
                 this.isPressed = true;
                 this.x = px;
                 this.y = py;
-                console.log("Joystick touch started at center", this.X, this.Y);
+                //console.log("Joystick touch started at center", this.X, this.Y);
                 break;
             }
         }
@@ -137,7 +137,7 @@ export class Joystick{
         }
         
         if (!touchExists) {
-            console.log("Joystick touch ended at", this.X, this.Y);
+           // console.log("Joystick touch ended at", this.X, this.Y);
             this.x = this.X;
             this.y = this.Y;
             this.dx = 0;

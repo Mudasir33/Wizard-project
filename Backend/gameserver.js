@@ -146,8 +146,9 @@ async function startServer() {
             
             
             //console.log("MOVEMENT ROOM", roomkey);
-           sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;
-            if (! sessions[roomkey].move[socket.id]) return;
+       
+         if (!sessions[roomkey].move[socket.id] || !sessions[roomkey].players[socket.id] || !sessions[roomkey] ) return;
+                sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;                                                                 
             sessions[roomkey].move[socket.id].dx = dx;
             sessions[roomkey].move[socket.id].dy = dy;
         });
@@ -300,13 +301,42 @@ async function startServer() {
                   console.log("leftroom")
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
-
                     return;
 
             }
              
             console.log("failed to leaveroom")
         });
+
+
+        //bara temporae
+        socket.on('delete_user', (room, p) => {
+            const exroom = sessions[room];
+            console.log('player:', socket.id ,' is dead and leaving',  exroom.id);
+            if(exroom.players[socket.id]){
+                exroom.players[socket.id].ready = false;
+                delete exroom.players[socket.id]
+                  console.log("now gone form the sesseion object")
+                    io.emit('sessions', sessions);
+
+                    return;
+
+            }
+             
+            console.log("failed to leave session")
+        });
+
+
+ socket.on("SPC",(data)=>{
+        const playercount = Object.keys(sessions[data].players).length
+          socket.emit("RPC",playercount)
+          return
+  })
+
+
+
+
+
 
 
     }); // CONNECTION SOCKET
@@ -483,6 +513,14 @@ setInterval(() => {
     
    
 }, 15);
+
+
+
+
+
+
+
+
 
 // --- ITEM SPAWNER ---
 setInterval(() => {

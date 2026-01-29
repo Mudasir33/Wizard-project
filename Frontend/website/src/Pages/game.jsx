@@ -32,6 +32,7 @@ export default function Game() {
   const gameStartedRef = useRef(false);
 
   console.log("ROOM", roomkey);
+
   const [showdeath, setdeath] = useState(false);
 
   useEffect(() => {
@@ -345,7 +346,7 @@ export default function Game() {
 
       // Log right joystick state for debugging
       if (spellJoystick.isPressed) {
-        console.log("Right joystick active - Direction:", direction, "isPressed:", spellJoystick.isPressed);
+       // console.log("Right joystick active - Direction:", direction, "isPressed:", spellJoystick.isPressed);
       }
 
       // SAVE direction BEFORE state change happens
@@ -571,13 +572,8 @@ export default function Game() {
     }, 15);
 
 
-    
-  socket.on("death", (data)=>{
-    console.log("you are dead")
-    setdeath(true);
-  }
+
   
-  )
 
     //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
     // Setup button event handlers
@@ -589,14 +585,28 @@ export default function Game() {
     b2.Eventen();
     b3.Eventen();
 
+
+    
+    socket.on("death", ()=>{
+    console.log("you died")
+    setdeath(true);
+    console.log(showdeath);
+  })
+
+
+
+
+
+
     return () => {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
-      socket.off("death");
+      socket.off("death")
       clearInterval(itemSpawnInterval);
     };
   }, [])
+
 
 
   return (
