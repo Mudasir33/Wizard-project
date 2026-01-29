@@ -19,9 +19,12 @@ export class Button{
            context.arc(this.x,this.y,this.r, 0, Math.PI *2);   
            context.lineWidth = 3;
            context.stroke();        
-            // context.fillStyle ="lightgray";
-            //context.fill();
-            context.font=("15px arial")
+           if (this.isPressed) {
+               context.fillStyle = "yellow";
+               context.fill();
+           }
+            context.font = "15px Arial";
+            context.fillStyle = "black";
            context.fillText(this.text, this.x - 5, this.y+5)
            context.restore();
            
@@ -75,6 +78,6 @@ export class Button{
         let dx = x - this.x;
         let dy = y - this.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
-        return this.r >= distance;
+        return this.r * 2 >= distance;
     }
 }

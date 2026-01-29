@@ -1,5 +1,5 @@
 import fire from "../../Assets/Spells/fireball.gif";
-import wizard from "../../Assets/Images/Wizard.png";
+import missile from "../../Assets/Spells/missile.png";
 export class Spell {
     constructor(x, y, type, direction) {
         this.x = x;
@@ -40,13 +40,24 @@ export class Spell {
             return; // Don't try to draw if image hasn't loaded yet
         }
         try {
+             // Calculate angle based on direction
+            const angle = Math.atan2(this.dy, this.dx);
+            const drawX = this.x * scaleup_constant;
+            const drawY = this.y * scaleup_constant;
+            const size = this.size;
+            context.save();
+            // Move to center of spell
+            context.translate(drawX + size / 2, drawY + size / 2);
+            context.rotate(angle);
+            // Draw image centered
             context.drawImage(
                 this.sprite,
-                this.x *scaleup_constant, 
-                this.y *scaleup_constant,
-                this.size,
-                this.size
+                -size / 2,
+                -size / 2,
+                size,
+                size
             );
+            context.restore();
         } catch (e) {
             console.error("Error drawing spell:", e);
         }
@@ -61,8 +72,8 @@ export const spell_list = {
         damage: 12,
         size: 40
     },
-        test: {
-        texture: wizard, //just a test for button
+    magic_missile: {
+        texture: missile,
         speed: 2,
         damage: 12,
         size: 40

@@ -59,6 +59,21 @@ let projectileId = 0; ///?
 let spawn_x = 50;
 let spawn_y = 125;
 
+// --- ITEM SPAWNING ---
+const ITEM_SPAWN_INTERVAL = 5000; // ms
+const ITEM_TYPES = ['fireball']; // can add more types later
+let roomItems = {};
+for (const room in sessions) {
+    roomItems[room] = [];
+}
+
+function getRandomPosition() {
+    // TODO: Use map bounds if available
+    const x = Math.floor(Math.random() * 600) + 50; // adjust as needed
+    const y = Math.floor(Math.random() * 400) + 50;
+    return { x, y };
+}
+
 
 
 
@@ -71,6 +86,11 @@ async function startServer() {
 
     io.on('connection', (socket) => {
         console.log('connected:', socket.id);
+
+        // Send current items to new client
+        socket.on('Game', (room) => {
+            socket.emit('spawnItems', roomItems[room]);
+        });
         socket.on('Game', (room) => {
             const test_room = room;   
             socket.join(room);    
@@ -131,6 +151,30 @@ async function startServer() {
             sessions[roomkey].move[socket.id].dx = dx;
             sessions[roomkey].move[socket.id].dy = dy;
         });
+
+        // Player picks up item
+        socket.on('pickupItem', ({ room, itemId }) => {
+            const items = roomItems[room];
+            if (!items) {
+                console.warn(`pickupItem: No items array for room '${room}'`);
+                return;
+            }
+            const idx = items.findIndex(item => item.id === itemId);
+            if (idx !== -1) {
+                const item = items[idx];
+                roomItems[room].splice(idx, 1);
+                io.to(room).emit('removeItem', itemId);
+                // Give ability to player (extend as needed)
+                if (sessions[room] && sessions[room].players[socket.id]) {
+                    if (!sessions[room].players[socket.id].abilities) {
+                        sessions[room].players[socket.id].abilities = [];
+                    }
+                    sessions[room].players[socket.id].abilities.push(item.type);
+                    socket.emit('abilityGained', item.type);
+                }
+            }
+        });
+
         //###############Projectiles##########################
         socket.on('spellCast', ({ spellName, spellDirection, x, y, roomkey }) => {
 
@@ -376,6 +420,30 @@ setInterval(() => {
 
         }
 
+        // --- ITEM COLLISION CHECK ---
+        for (const pid in players) {
+            const player = players[pid];
+            if (!player.alive) continue;
+            const items = roomItems[roomName];
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                // Simple collision check (adjust size as needed)
+                if (
+                    player.x < item.x + 20 &&
+                    player.x + 11 > item.x &&
+                    player.y < item.y + 20 &&
+                    player.y + 15 > item.y
+                ) {
+                    // Remove item and notify
+                    roomItems[roomName].splice(i, 1);
+                    io.to(roomName).emit('removeItem', item.id);
+                    if (!player.abilities) player.abilities = [];
+                    player.abilities.push(item.type);
+                    io.to(pid).emit('abilityGained', item.type);
+                }
+            }
+        }
+
             // Update all projectile positions
         for (const id in backendProjectiles) {
             const projectile = backendProjectiles[id];
@@ -412,11 +480,26 @@ setInterval(() => {
 
      io.to(roomName).emit('updatePlayers', players);
      io.to(roomName).emit('updateProjectiles', backendProjectiles);
+    io.to(roomName).emit('spawnItems', roomItems[roomName]);
     }
    
     
    
 }, 15);
+
+// --- ITEM SPAWNER ---
+setInterval(() => {
+    for (const room in sessions) {
+        // Limit number of items on map
+        if (!roomItems[room]) roomItems[room] = [];
+        if (roomItems[room].length >= 3) continue;
+        const id = 'item_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+        const pos = getRandomPosition();
+        const type = ITEM_TYPES[0];
+        const item = { id, x: pos.x, y: pos.y, type };
+        roomItems[room].push(item);
+    }
+}, ITEM_SPAWN_INTERVAL);
 
 startServer().catch(console.error);
 

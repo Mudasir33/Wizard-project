@@ -6,12 +6,22 @@ import { Joystick } from "../../../game/joystick.js";
 import { Button } from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
+import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
 import { Socket } from "socket.io-client";
-
 import Game_death from "./Game_Death.jsx";
+
 export default function Game() {
   //should help with 
   const { state: roomkey } = useLocation();
+
+  // Pickup state
+  const itemRef = useRef([]);
+  const itemSpriteRef = useRef(null);
+
+  // Equipped spell (null = default magic_missile)
+  const equippedSpellRef = useRef(null);
+ 
+  const button1IconRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
   const startedRef = false;
@@ -22,9 +32,7 @@ export default function Game() {
   const gameStartedRef = useRef(false);
 
   console.log("ROOM", roomkey);
-
   const [showdeath, setdeath] = useState(false);
-
 
   useEffect(() => {
     if (!gameStartedRef.current) {
@@ -40,6 +48,10 @@ export default function Game() {
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
 
+    // Item sprite
+    itemSpriteRef.current = new window.Image();
+    itemSpriteRef.current.src = fireballPickup;
+
     let map = null;
     let grid = null;
 
@@ -47,6 +59,51 @@ export default function Game() {
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
     let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+
+    // Helper: get random walkable tile
+    function getRandomWalkableTile() {
+      if (!map || !map.layers || !map.layers[0] || !map.layers[0].grid) return { x: 5, y: 5 };
+      const grid = map.layers[0].grid;
+      const height = grid.length;
+      const width = grid[0].length;
+      let tries = 0;
+      while (tries < 100) {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        // Assume walkable if id is not 0/null (customize as needed)
+        if (grid[y][x] && grid[y][x].id !== 0) {
+          return { x, y };
+        }
+        tries++;
+      }
+      return { x: 5, y: 5 };
+    }
+
+    // Spawn item every 10 seconds
+    // Only spawn spell_list pickups (not magic_missile)
+    function getRandomSpellPickup() {
+      const keys = Object.keys(spell_list).filter(k => k !== "magic_missile");
+      const key = keys[Math.floor(Math.random() * keys.length)] || "fireball";
+      const texture = spell_list[key].texture;
+      return { key, texture };
+    }
+    function spawnItem() {
+      if (!map) return;
+      const pos = getRandomWalkableTile();
+      const pickup = getRandomSpellPickup();
+      itemRef.current.push({
+        x: pos.x * TILE_SIZE + TILE_SIZE / 2,
+        y: pos.y * TILE_SIZE + TILE_SIZE / 2,
+        active: true,
+        spellKey: pickup.key,
+        spellTexture: pickup.texture
+      });
+    }
+    const itemSpawnInterval = setInterval(() => {
+      if (map) {
+        spawnItem();
+      }
+    }, 10000);
 
 
 
@@ -175,13 +232,13 @@ export default function Game() {
 
     //kanske ändra 
     let lastValidDirection = { x: 1, y: 0 }; // Remember last direction swiped
-    let choosen_spell = "fireball";
+    let choosen_spell = "magic_missile";
     let spelllist = [];
     let previous_state = false;
 
     // Sizes (in px, scaled)
     const JOYSTICK_RADIUS = canvas.width * 0.03;
-    const BUTTON_RADIUS = canvas.width * 0.015;
+    const BUTTON_RADIUS = canvas.width * 0.025;
 
     // Padding as % of width/height
     const EDGE_PADDING_X = canvas.width * 0.15;
@@ -194,7 +251,7 @@ export default function Game() {
     const spellJoystickY = canvas.height - EDGE_PADDING_Y - JOYSTICK_RADIUS;
 
     // Buttons: diagonal/vertical stack to the left and above the right joystick
-    const buttonSpacing = BUTTON_RADIUS * 2;
+    const buttonSpacing = BUTTON_RADIUS * 1.3;
     const b1X = spellJoystickX;
     const b1Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 2.2;
     const b2X = spellJoystickX - buttonSpacing * 2.2;
@@ -213,6 +270,23 @@ export default function Game() {
 
 
     function updatePlayer() {
+            // Check for item pickup (collision)
+            for (let i = itemRef.current.length - 1; i >= 0; i--) {
+              const item = itemRef.current[i];
+              if (item.active && frontendPlayers[socket.id]) {
+                const player = frontendPlayers[socket.id];
+                const dx = player.x - item.x;
+                const dy = player.y - item.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 15) {
+                  // Set button 1 icon to this spell
+                  const img = new window.Image();
+                  img.src = item.spellTexture;
+                  button1IconRef.current = { key: item.spellKey, image: img };
+                  itemRef.current.splice(i, 1); // Remove item
+                }
+              }
+            }
       let dx = 0,
         dy = 0;
 
@@ -277,13 +351,15 @@ export default function Game() {
       // SAVE direction BEFORE state change happens
       if (previous_state == true && spellJoystick.isPressed == false) {
         // Joystick was released - use LAST VALID direction, not current (which is now 0)
-        console.log("SHOOT TRIGGERED! Direction:", lastValidDirection);
-        spellCreate(choosen_spell, lastValidDirection, roomkey); //spell output
-
-        if (choosen_spell != "fireball") {
-          console.log("changeback to fireball");
-          choosen_spell = "fireball";
+        let spellToCast = "magic_missile";
+        if (equippedSpellRef.current) {
+          spellToCast = equippedSpellRef.current;
+          // After casting equipped spell, revert to default and remove icon
+          equippedSpellRef.current = null;
+          button1IconRef.current = null;
         }
+        console.log("SHOOT TRIGGERED! Direction:", lastValidDirection, "Spell:", spellToCast);
+        spellCreate(spellToCast, lastValidDirection, roomkey);
       }
       // Update state AFTER we process the release
       previous_state = spellJoystick.isPressed;
@@ -320,9 +396,10 @@ export default function Game() {
 
     //####CHANGE SPELL#############################################################################################
     function changeSpell(button) {
-      if (button === 1) {
-        console.log("change spell");
-        choosen_spell = "test";
+      // Button 1: equip spell_list
+      if (button === 1 && button1IconRef.current) {
+        equippedSpellRef.current = button1IconRef.current.key;
+        console.log("Equipped spell:", equippedSpellRef.current);
       }
     }
 
@@ -400,6 +477,21 @@ export default function Game() {
           projectile.draw(ctx, scaleup_constant);
         }
 
+        // Draw items if active, scale to wizard size (11x15)
+        itemRef.current.forEach(item => {
+          if (item.active && itemSpriteRef.current.complete) {
+            ctx.save();
+            ctx.drawImage(
+              itemSpriteRef.current,
+              (item.x - 11 / 2) * scaleup_constant,
+              (item.y - 15 / 2) * scaleup_constant,
+              11 * scaleup_constant,
+              15 * scaleup_constant
+            );
+            ctx.restore();
+          }
+        });
+
 
         //Old local spell drawing code (now handled by server updates)
         /* Draw and update spells with proper camera offset (still in world transform)
@@ -430,6 +522,18 @@ export default function Game() {
         // Draw spell joystick and buttons (fixed to screen, not affected by camera)
         spellJoystick.draw(ctx);
         b1.draw(ctx);
+        // Draw button 1 icon if available
+        if (button1IconRef.current && button1IconRef.current.image && button1IconRef.current.image.complete && b1X && b1Y && BUTTON_RADIUS) {
+          ctx.save();
+          ctx.drawImage(
+            button1IconRef.current.image,
+            b1X - BUTTON_RADIUS,
+            b1Y - BUTTON_RADIUS,
+            BUTTON_RADIUS * 2,
+            BUTTON_RADIUS * 2
+          );
+          ctx.restore();
+        }
         b2.draw(ctx);
         b3.draw(ctx);
 
@@ -481,9 +585,9 @@ export default function Game() {
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
       socket.off("death");
+      clearInterval(itemSpawnInterval);
     };
   }, [])
-
 
   socket.on("death", (data)=>{
     console.log("you are dead")
