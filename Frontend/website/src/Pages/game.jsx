@@ -22,6 +22,7 @@ export default function Game() {
   const equippedSpellRef = useRef(null);
  
   const button1IconRef = useRef(null);
+  const startTimeRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
   const startedRef = false;
@@ -48,6 +49,12 @@ export default function Game() {
     ctx.imageSmoothingEnabled = false;
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
+    
+    //// draw zone on offscreen canvas
+    var c = document.createElement("canvas");
+    c.width = canvas.width;
+    c.height = canvas.height;
+    const cctx = c.getContext("2d");
 
     // Item sprite
     itemSpriteRef.current = new window.Image();
@@ -60,6 +67,14 @@ export default function Game() {
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
     let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+
+
+    //zone radius and time
+    let radius =   canvas.width*2 ;
+    let smallRadius = radius;
+    const startRadius = radius;
+    const duration = 60000;
+    let startTime = startTimeRef.current;
 
     // Helper: get random walkable tile
     function getRandomWalkableTile() {
@@ -404,12 +419,12 @@ export default function Game() {
       }
     }
 
-    function loop(t) {
+    function loop(timestamp) {
       if (!gameLoopActive || !map || !frontendPlayers[socket.id]) return;
 
       try {
         updatePlayer();
-
+        ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = "white";
         ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -463,7 +478,54 @@ export default function Game() {
             }
           }
         }
+        //set the overlay canvas for the zone 
+        const zoneWorldX = (TILE_SIZE ) / 100;
+        const zoneWorldY = (TILE_SIZE ) / 100;
+        const player = frontendPlayers[socket.id];
+        const cx = cameraOffsetX + (zoneWorldX-player.x) * scaleup_constant;
+        const cy = cameraOffsetY + (zoneWorldY-player.y) * scaleup_constant;
+        const circleX= (width * TILE_SIZE* scaleup_constant);
+        const circleY= (height * TILE_SIZE * scaleup_constant);
+        const playerX = player.x * scaleup_constant;
+        const playerY = player.y * scaleup_constant;
+        
+        //set the time for the game play
+        if (startTime === null) {
+          startTime = timestamp;
+        }
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
 
+        // Blue background zone
+        cctx.globalCompositeOperation = 'source-over';
+        cctx.clearRect(0, 0, c.width, c.height);
+        cctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+        cctx.fillRect(cx, cy , width * TILE_SIZE* scaleup_constant, height * TILE_SIZE * scaleup_constant);
+        cctx.fill();
+
+        //Shrinks the zone to end
+        smallRadius = startRadius * (1 - progress);
+        if (smallRadius > 0) {
+          cctx.globalCompositeOperation = 'destination-out';
+          cctx.fillStyle = 'rgba(0,0,0,1)';
+          cctx.beginPath();
+          cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
+          cctx.fill();   
+          
+        }
+
+        //checks if player is outside zone
+        function isBlue() {
+          const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;
+          const [r, g, b, a] = postion;          
+           if( r === 0 && g === 0 && b === 255 && a === 128){
+            return true;
+           }
+          return false;
+        }
+        const state = isBlue();
+        socket.emit('zone', {state, roomkey});
+         
         // tiny red debug square on top (optional, you can remove this)
         //ctx.fillStyle = '#ff0000';
         //ctx.fillRect(0, 0, 10 * scaleup_constant, 10 * scaleup_constant);
@@ -538,36 +600,21 @@ export default function Game() {
         b2.draw(ctx);
         b3.draw(ctx);
 
-        // Check for collisions between players
-
-        /*
-        const playerIds = Object.keys(frontendPlayers);
-        for (let i = 0; i < playerIds.length; i++) {
-          for (let j = i + 1; j < playerIds.length; j++) {
-            const player1 = frontendPlayers[playerIds[i]];
-            const player2 = frontendPlayers[playerIds[j]];
-            if (player1.checkCollision(player2)) {
-              // Simple collision damage
-              player1.takeDamage(1);
-              player2.takeDamage(1);
-            }
-          }
-
-        }*/
-
-        //requestAnimationFrame(loop);
-        // canvas.drawImage(player.image, player.x, player.y);
-        // player.draw();
-        // console.log(player);
+        ctx.drawImage(c,0,0);
+        
+        
+        requestAnimationFrame(loop);
+        
       } catch (error) {
         console.error("Error in loop:", error);
       }
     }
 
+    requestAnimationFrame(loop);// if it's inside the interval the game will get slower
 
     setInterval(() => {
 
-      requestAnimationFrame(loop);
+      
       // console.log("inputs:", playerInputs);
     }, 15);
 

@@ -197,7 +197,19 @@ async function startServer() {
             console.log(sessions[roomkey].backendProjectiles);
         });
 
-         
+        //###############Zone##########################
+        socket.on('zone', ({state, roomkey}) => {
+           
+            if (state == true) {
+                if (sessions[roomkey].players[socket.id].health <= 0) {
+                    
+                    
+                    sessions[roomkey].players[socket.id].alive = false;
+                }
+                sessions[roomkey].players[socket.id].health -= 1;
+            }
+             
+        });        
 
 
         // ###################SESSION##################################
