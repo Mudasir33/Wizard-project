@@ -36,6 +36,7 @@ export default function Game() {
 
   const [showdeath, setdeath] = useState(false);
 
+
   useEffect(() => {
     if (!gameStartedRef.current) {
       socket.emit("gameStart", roomkey);
@@ -161,6 +162,9 @@ export default function Game() {
           frontendPlayers[id].y = backendPlayer.y;
           frontendPlayers[id].health = backendPlayer.health;
           frontendPlayers[id].alive = backendPlayer.alive;
+          frontendPlayers[id].dx = backendPlayer.dx;
+          frontendPlayers[id].dy = backendPlayer.dy;
+
 
           if (id === socket.id) {
             // Update existing player position
@@ -186,6 +190,7 @@ export default function Game() {
             }); */
           }
         }
+        
 
         for (const id in frontendPlayers) {
           if (!backendPlayers[id]) delete frontendPlayers[id];
@@ -209,8 +214,33 @@ export default function Game() {
       socket.emit('keyup', e.code, roomkey);
     });
 
+    //############ WALL COLLISION #######################
+    function wallCollison(object, player) {
+    if (object==null) return; 
+      const obj = object.objectLayers[0].obj; 
+        const player_x =  player.x;
+        const player_y = player.y;
+        const player_width =  11;
+        const player_height =  15;
+        for (let j = 0; j < obj.objects.length; j++) {
+            const wallX = obj.objects[j].x;  
 
+            const wallY = obj.objects[j].y;
+            const wallWidth = obj.objects[j].width;
+            const wallHeight = obj.objects[j].height;
 
+            if (
+                player_x < wallX + wallWidth &&
+                player_x + player_width > wallX &&
+                player_y < wallY + wallHeight &&
+                player_y + player_height > wallY
+            ) {                
+                return true;
+            }
+        }
+
+        return false;
+    }
     //##########Projectiles/spells##########################################################################################
 
     const frontEndProjectiles = frontEndProjectilesRef.current;
@@ -283,8 +313,7 @@ export default function Game() {
     const b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
     const b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
     const b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
-
-
+    
     function updatePlayer() {
             // Check for item pickup (collision)
             for (let i = itemRef.current.length - 1; i >= 0; i--) {
@@ -332,19 +361,32 @@ export default function Game() {
         dx *= inv;
         dy *= inv;
       }
-
+      const obj = map;
       // Update player position
       if (frontendPlayers[socket.id]) {
         //if statement om x och y 
-
+        
         const player = frontendPlayers[socket.id];
         const speed = player.speed || 100;
         player.x += dx * speed * 0.015;
         player.y += dy * speed * 0.015;
+        if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
+                player.x += (dx * player.speed * 0.015) ;
+                player.y += (dy * player.speed * 0.015);
+
+
+            }else{
+                //if collision is true from input the characters will move away from the wall
+                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
+                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
+                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
+
+                }
+              }
 
         // Send combined movement input to server (always, even when 0, to stop movement)
-
-
+        player.dx = dx;
+        player.dy = dy;
         socket.emit('movement', { dx, dy, sequenceNumber, roomkey });
       }
 
@@ -418,7 +460,8 @@ export default function Game() {
         console.log("Equipped spell:", equippedSpellRef.current);
       }
     }
-
+    //####MAIN GAME LOOP#############################################################################################
+    let lastTime = 0;
     function loop(timestamp) {
       if (!gameLoopActive || !map || !frontendPlayers[socket.id]) return;
 
@@ -530,6 +573,14 @@ export default function Game() {
         //ctx.fillStyle = '#ff0000';
         //ctx.fillRect(0, 0, 10 * scaleup_constant, 10 * scaleup_constant);
 
+        // Update animations
+        const deltaTime = (timestamp - lastTime) / 1000; // in seconds
+        lastTime = timestamp;
+        Object.values(frontendPlayers).forEach(player => {
+          player.update(deltaTime); 
+          
+        });
+
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
           player.draw(ctx, scaleup_constant);
@@ -601,9 +652,8 @@ export default function Game() {
         b3.draw(ctx);
 
         ctx.drawImage(c,0,0);
-        
-        
-        requestAnimationFrame(loop);
+
+        requestAnimationFrame(loop)
         
       } catch (error) {
         console.error("Error in loop:", error);

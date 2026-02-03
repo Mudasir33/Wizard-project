@@ -33,11 +33,11 @@ const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'pu
 
 
 let sessions = {
-    'Room 1': { id: 'Room 1',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false, numready:0},
-    'Room 2': { id: 'Room 2',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false, numready:0} ,
-    'Room 3': { id: 'Room 3',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
-    'Room 4': { id: 'Room 4',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
-    'Room 5': { id: 'Room 5',  players: {}, move:{}, backendProjectiles:{}, map:null, ongoing: false,  numready:0},
+    'Room 1': { id: 'Room 1', players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0 },
+    'Room 2': { id: 'Room 2', players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0 },
+    'Room 3': { id: 'Room 3', players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0 },
+    'Room 4': { id: 'Room 4', players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0 },
+    'Room 5': { id: 'Room 5', players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0 },
 };
 
 
@@ -92,19 +92,19 @@ async function startServer() {
             socket.emit('spawnItems', roomItems[room]);
         });
         socket.on('Game', (room) => {
-            const test_room = room;   
-            socket.join(room);    
+            const test_room = room;
+            socket.join(room);
             sessions[room].map = Map2d;
             console.log("Game starting:", room);
             socket.emit('gameRoom', room);
-       
+
         });
 
 
-        socket.on('gameStart', (room) => {  
-            io.emit('map', Map2d); 
+        socket.on('gameStart', (room) => {
+            io.emit('map', Map2d);
             io.to(room).emit('updatePlayers', sessions[room].players[socket.id]);
-            
+
         });
 
 
@@ -135,22 +135,24 @@ async function startServer() {
             io.emit('updatePlayers', players);
         });
 
-        socket.on('keyup', (key,room) => {
+        socket.on('keyup', (key, room) => {
             //console.log(room);
             if (!sessions[room].move[socket.id]) return;
             if (key == 'KeyW' || key == 'KeyS') sessions[room].move[socket.id].dy = 0;
             if (key == 'KeyA' || key == 'KeyD') sessions[room].move[socket.id].dx = 0;
         });
 
-        socket.on('movement', ({ dx, dy, sequenceNumber,roomkey }) => {
-            
-            
+        socket.on('movement', ({ dx, dy, sequenceNumber, roomkey }) => {
+
+
             //console.log("MOVEMENT ROOM", roomkey);
-       
-         if (!sessions[roomkey].move[socket.id] || !sessions[roomkey].players[socket.id] || !sessions[roomkey] ) return;
-                sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;                                                                 
+
+            if (!sessions[roomkey].move[socket.id] || !sessions[roomkey].players[socket.id] || !sessions[roomkey]) return;
+            sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;
             sessions[roomkey].move[socket.id].dx = dx;
             sessions[roomkey].move[socket.id].dy = dy;
+            sessions[roomkey].players[socket.id].dx = dx;
+            sessions[roomkey].players[socket.id].dy = dy;
         });
 
         // Player picks up item
@@ -182,8 +184,8 @@ async function startServer() {
             if (sessions[roomkey].players[socket.id].alive === false) return; // dead players can't shoot
             projectileId += 1;
             //console.log("SPELL", roomkey);
-            
-            
+
+
             sessions[roomkey].backendProjectiles[projectileId] = {
                 spellName: spellName,
                 spellDirection: spellDirection,
@@ -198,18 +200,18 @@ async function startServer() {
         });
 
         //###############Zone##########################
-        socket.on('zone', ({state, roomkey}) => {
-           
+        socket.on('zone', ({ state, roomkey }) => {
+
             if (state == true) {
                 if (sessions[roomkey].players[socket.id].health <= 0) {
-                    
-                    
+
+
                     sessions[roomkey].players[socket.id].alive = false;
                 }
                 sessions[roomkey].players[socket.id].health -= 1;
             }
-             
-        });        
+
+        });
 
 
         // ###################SESSION##################################
@@ -225,7 +227,7 @@ async function startServer() {
                 socket.emit('joinerror', 'Put in username');
                 return
             }
-         
+
             if (Object.keys(sessions[room].players).length >= 10) {
                 // is room full
                 console.log('SERVER: try to join full room ');
@@ -241,22 +243,24 @@ async function startServer() {
                 }
             }
 
-         
+
             const index = Object.keys(sessions[room].players).length;
             sessions[room].players[socket.id] = {
                 username: p.username,
                 color: colors[index],
                 ready: false,
-                x: spawn_x, 
-                y: spawn_y,         
+                x: spawn_x,
+                y: spawn_y,
                 health: 100,
                 alive: true,
                 id: number,
                 speed: 100,
                 sequenceNumber: 0,
+                dx: 0,
+                dy: 0,
             };
             spawn_x += 30;
-            
+
             socket.join(room);
             console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
             sessions[room].move[socket.id] = { dx: 0, dy: 0 };
@@ -275,20 +279,21 @@ async function startServer() {
             const players = sessions[room].players;
             const numplayers = Object.keys(sessions[room].players).length;
             console.log("ready")
-            if(players[socket.id]  ){
-                if(players[socket.id].ready == false){
+            if (players[socket.id]) {
+                if (players[socket.id].ready == false) {
                     players[socket.id].ready = true;
-                sessions[room].numready =  sessions[room].numready +1;}
-                else{
-                     players[socket.id].ready = false;
-                      sessions[room].numready=   sessions[room].numready -1;
+                    sessions[room].numready = sessions[room].numready + 1;
+                }
+                else {
+                    players[socket.id].ready = false;
+                    sessions[room].numready = sessions[room].numready - 1;
+                }
             }
-        }
-                console.log(sessions[room].numready / numplayers)
+            console.log(sessions[room].numready / numplayers)
             if (sessions[room].numready / numplayers >= 0.51 && numplayers >= 2) {
                 sessions[room].ongoing = true;
                 console.log("emit players ready")
-            io.to(room).emit("players_ready", room);
+                io.to(room).emit("players_ready", room);
             }
             else {
                 sessions[room].ongoing = false;
@@ -306,17 +311,17 @@ async function startServer() {
 
         socket.on('room_leave', (room, p) => {
             const exroom = sessions[room];
-            console.log('player:', socket.id ,'leaving room',  exroom.id);
-            if(exroom.players[socket.id]){
+            console.log('player:', socket.id, 'leaving room', exroom.id);
+            if (exroom.players[socket.id]) {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                  console.log("leftroom")
-                    socket.emit('leftroom', sessions);
-                    io.emit('sessions', sessions);
-                    return;
+                console.log("leftroom")
+                socket.emit('leftroom', sessions);
+                io.emit('sessions', sessions);
+                return;
 
             }
-             
+
             console.log("failed to leaveroom")
         });
 
@@ -324,26 +329,26 @@ async function startServer() {
         //bara temporae
         socket.on('delete_user', (room, p) => {
             const exroom = sessions[room];
-            console.log('player:', socket.id ,' is dead and leaving',  exroom.id);
-            if(exroom.players[socket.id]){
+            console.log('player:', socket.id, ' is dead and leaving', exroom.id);
+            if (exroom.players[socket.id]) {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                  console.log("now gone form the sesseion object")
-                    io.emit('sessions', sessions);
+                console.log("now gone form the sesseion object")
+                io.emit('sessions', sessions);
 
-                    return;
+                return;
 
             }
-             
+
             console.log("failed to leave session")
         });
 
 
- socket.on("SPC",(data)=>{
-        const playercount = Object.keys(sessions[data].players).length
-          socket.emit("RPC",playercount)
-          return
-  })
+        socket.on("SPC", (data) => {
+            const playercount = Object.keys(sessions[data].players).length
+            socket.emit("RPC", playercount)
+            return
+        })
 
 
 
@@ -358,55 +363,56 @@ async function startServer() {
 
 
 // checks if character is hitting one of the walls 
-   function wallCollison(object, player) {
-    if (object==null) return; 
-      const obj = object.objectLayers[0].obj; 
-        const player_x =  player.x;
-        const player_y = player.y;
-        const player_width =  11;
-        const player_height =  15;
-        for (let j = 0; j < obj.objects.length; j++) {
-            const wallX = obj.objects[j].x;  
+function wallCollison(object, player) {
+    if (object == null) return;
+    const obj = object.objectLayers[0].obj;
+    const player_x = player.x;
+    const player_y = player.y;
+    const player_width = 11;
+    const player_height = 15;
+    for (let j = 0; j < obj.objects.length; j++) {
+        const wallX = obj.objects[j].x;
 
-            const wallY = obj.objects[j].y;
-            const wallWidth = obj.objects[j].width;
-            const wallHeight = obj.objects[j].height;
-            
-            if (
-                player_x < wallX + wallWidth &&
-                player_x + player_width > wallX &&
-                player_y < wallY + wallHeight &&
-                player_y + player_height > wallY
-            ) {                
-                return true;
-            }
-        }
-        
-        return false;
-    }
+        const wallY = obj.objects[j].y;
+        const wallWidth = obj.objects[j].width;
+        const wallHeight = obj.objects[j].height;
 
-
-    function ProjectilePlayerCollision(projectile, player) {
-        const projectile_x = projectile.x;
-        const projectile_y = projectile.y;
-        const projectile_size = 5; // assuming projectile is a square of size 5x5
-        const player_x = player.x;
-        const player_y = player.y;
-        const player_width = 11;
-        const player_height = 15;
         if (
-            projectile_x < player_x + player_width &&
-            projectile_x + projectile_size > player_x &&
-            projectile_y < player_y + player_height &&
-            projectile_y + projectile_size > player_y
+            player_x < wallX + wallWidth &&
+            player_x + player_width > wallX &&
+            player_y < wallY + wallHeight &&
+            player_y + player_height > wallY
         ) {
             return true;
         }
-        return false;
     }
+
+    return false;
+}
+
+
+function ProjectilePlayerCollision(projectile, player) {
+    const projectile_x = projectile.x;
+    const projectile_y = projectile.y;
+    const projectile_size = 5; // assuming projectile is a square of size 5x5
+    const player_x = player.x;
+    const player_y = player.y;
+    const player_width = 11;
+    const player_height = 15;
+    if (
+        projectile_x < player_x + player_width &&
+        projectile_x + projectile_size > player_x &&
+        projectile_y < player_y + player_height &&
+        projectile_y + projectile_size > player_y
+    ) {
+        return true;
+    }
+    return false;
+}
 
 setInterval(() => {
     // Update all player positions based on input
+    
     for (const [roomName, roomInfo] of Object.entries(sessions)) {
         const players = roomInfo.players;
         const playerInput = roomInfo.move;
@@ -419,9 +425,10 @@ setInterval(() => {
             const player = players[id];
             const input = playerInput[id];
 
-
             
-             
+
+
+
             //console.log("input:", players);
             if (!input) continue;
 
@@ -433,29 +440,29 @@ setInterval(() => {
                 dx *= inv;
                 dy *= inv;
             }
-                            
-                player.x += (dx * player.speed * 0.015); //this is more of a quick fix that may need changes in the future
-                player.y += (dy * player.speed * 0.015); 
-            if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
-                player.x += (dx * player.speed * 0.015) ;
+
+            player.x += (dx * player.speed * 0.015); //this is more of a quick fix that may need changes in the future
+            player.y += (dy * player.speed * 0.015);
+            if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined) {
+                player.x += (dx * player.speed * 0.015);
                 player.y += (dy * player.speed * 0.015);
 
-                
-            }else{
-                if (player.alive === false)break
+
+            } else {
+                if (player.alive === false) break
                 //if collision is true from input the characters will move away from the wall
-                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
-                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
-                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
-                   
+                if (0.1 <= dx && dx <= 1 || 0.1 <= dy && dy <= 1 || -1 <= dx && dx <= -0.1 || -1 <= dy && dy <= -0.1) {
+                    player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
+                    player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
+
                 }
 
-                
-                
-                
+
+
+
             }
 
-             
+
 
         }
 
@@ -483,17 +490,17 @@ setInterval(() => {
             }
         }
 
-            // Update all projectile positions
+        // Update all projectile positions
         for (const id in backendProjectiles) {
             const projectile = backendProjectiles[id];
             const direction = projectile.spellDirection;
             let dx = direction.x;
             let dy = direction.y;
-            
+
             projectile.x += dx * projectile.speed * 0.015;
             projectile.y += dy * projectile.speed * 0.015;
             // Check for collision with walls
-            if (wallCollison(obj, projectile) == true){
+            if (wallCollison(obj, projectile) == true) {
                 delete backendProjectiles[id];
             }
 
@@ -502,7 +509,7 @@ setInterval(() => {
                 if (ProjectilePlayerCollision(projectile, players[pid])) {
                     if (pid === projectile.playerId || players[pid].alive === false) break; // skip if the projectile hit the shooter or if the player is already dead
                     console.log("HIT PLAYER", pid);
-                    players[pid].health -= 10; 
+                    players[pid].health -= 10;
                     delete backendProjectiles[id];
 
                     console.log("Player health:", players[pid].health);
@@ -517,13 +524,13 @@ setInterval(() => {
             }
         }
 
-     io.to(roomName).emit('updatePlayers', players);
-     io.to(roomName).emit('updateProjectiles', backendProjectiles);
-    io.to(roomName).emit('spawnItems', roomItems[roomName]);
+        io.to(roomName).emit('updatePlayers', players);
+        io.to(roomName).emit('updateProjectiles', backendProjectiles);
+        io.to(roomName).emit('spawnItems', roomItems[roomName]);
     }
-   
-    
-   
+
+
+
 }, 15);
 
 
