@@ -6,38 +6,33 @@ import { Player } from "../../../game/Player";
 
 
 
-export default function Game_death(){
-    const nav = useNavigate();
-    const [playercount , setPlayercount] = useState(0)
-      const { state: roomkey } = useLocation(); 
 
+
+export default function Game_death({placement, won}){
+    const nav = useNavigate();
+      const { state: roomkey } = useLocation(); 
+      
     
+function back(){
+  socket.emit("delete_user", roomkey)
+
+  socket.emit("restart_game",(roomkey))
+    
+  nav("/")
+}
      
       console.log("deathroomkey: " ,roomkey)
-      if(playercount ==1){
-        socket.on("winning player is:", socket.id)
-        socket.emit("get_winnigplayer")
-      }
+      console.log("placement:", placement);
+    
 
     useEffect(() => {
-    console.log("death: send player count")
-      socket.emit("SPC", roomkey) // send me player count
 
-      console.log("death: leaverom")
-      socket.emit("delete_user", roomkey)
-
-      socket.on("RPC",(playercount)=>{ //recive playercount
-        console.log("death: recive playe count", playercount)
-       setPlayercount( playercount +1 );
-      })
-    
+     
 
 
 
 
     return () => {
-      socket.off('RPC');
-      socket.off('delete_user', (roomkey));
   
       
     };
@@ -49,11 +44,11 @@ export default function Game_death(){
     <div className="death-overlay">
 
 
-        <h1>Dead</h1>
-        <h2>Place: {playercount}</h2>
+        <h1>{won ? "Victory!   " : "Dead   "}</h1>
+        <h2>Place: {placement}</h2>
 
 
-        <button onClick={()=> nav("/")}>Back</button>
+        <button onClick={back}>Back</button>
     
     
     

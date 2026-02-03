@@ -84,9 +84,10 @@ useEffect(()=> {
         console.log("reacived players ready")
         startGame(roomkey)
 
-    }
+    })
     
-    );
+    
+
 
 
 
@@ -99,6 +100,16 @@ useEffect(()=> {
          nav("/game", {state: data})
 
     });   
+
+
+
+      return () => {
+      socket.off('gameRoom');
+      socket.off('players_ready');
+      socket.off("sessions")
+  
+      
+    };
           
        }, [])
    
