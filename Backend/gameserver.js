@@ -315,10 +315,11 @@ async function startServer() {
             if (exroom.players[socket.id]) {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                console.log("leftroom")
-                socket.emit('leftroom', sessions);
-                io.emit('sessions', sessions);
-                return;
+                  console.log("leftroom")
+                     socket.leave(room);
+                    socket.emit('leftroom', sessions);
+                    io.emit('sessions', sessions);
+                    return;
 
             }
 
@@ -327,30 +328,35 @@ async function startServer() {
 
 
         //bara temporae
-        socket.on('delete_user', (room, p) => {
+        socket.on('delete_user', (room) => {
             const exroom = sessions[room];
-            console.log('player:', socket.id, ' is dead and leaving', exroom.id);
-            if (exroom.players[socket.id]) {
+            console.log('player:', socket.id ,'is leaving',  exroom.id);
+            if(exroom.players[socket.id]){
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                console.log("now gone form the sesseion object")
-                io.emit('sessions', sessions);
-
-                return;
-
+                socket.leave(room);
+                    io.emit('sessions', sessions);
+                    return;
             }
 
             console.log("failed to leave session")
         });
 
 
-        socket.on("SPC", (data) => {
-            const playercount = Object.keys(sessions[data].players).length
-            socket.emit("RPC", playercount)
-            return
+
+        socket.on("restart_game",(roomkey)=>{
+            const room = sessions[roomkey];
+            const players = Object.keys(room.players)
+            console.log("playes left in session: ", players.length)
+            if(players.length === 0){
+            console.log("restetsession")
+            room.backendProjectiles = {};
+            room.players =  {};
+            room.numready = 0;
+            room.ongoing = false;
+            }
+
         })
-
-
 
 
 
@@ -419,8 +425,8 @@ setInterval(() => {
         const backendProjectiles = roomInfo.backendProjectiles;
         const obj = roomInfo.map
 
-        //console.log("map", roomInfo.map.objectLayers[0].obj);
-
+          
+ //console.log("map", roomInfo.map.objectLayers[0].obj);
         for (const id in players) {
             const player = players[id];
             const input = playerInput[id];
@@ -503,6 +509,8 @@ setInterval(() => {
             if (wallCollison(obj, projectile) == true) {
                 delete backendProjectiles[id];
             }
+            
+
 
             // Check for collision with players
             for (const pid in players) {
@@ -516,21 +524,47 @@ setInterval(() => {
                     if (players[pid].health <= 0) {
                         players[pid].alive = false;
                         console.log("Player", pid, "has died.");
-                        io.to(pid).emit("death")
+                        console.log(players)
+                        const aliveplayers = Object.keys(players).filter(id => players[id].alive)
+                        console.log(aliveplayers)
+
+                        io.to(pid).emit("death", aliveplayers.length +1 )
+                        
+                        
+                        if(aliveplayers.length === 1){
+                            const winner =  aliveplayers[0]
+                            console.log("winning player")
+                            console.log("winning player", winner )
+                            io.to(winner).emit("winner", 1)
+
+                        }
+                        
                         //delete players[pid];
                     }
 
                 }
             }
+
+            
+
+
+
         }
 
         io.to(roomName).emit('updatePlayers', players);
         io.to(roomName).emit('updateProjectiles', backendProjectiles);
         io.to(roomName).emit('spawnItems', roomItems[roomName]);
     }
+   
+
+  
 
 
 
+
+
+    
+   
 }, 15);
 
 

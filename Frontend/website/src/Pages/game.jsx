@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { data, useLocation } from "react-router-dom";
 import { socket } from "../../../game/Socket";
 import { Player } from "../../../game/Player.js";
 import { Joystick } from "../../../game/joystick.js";
@@ -14,6 +14,9 @@ export default function Game() {
   //should help with 
   const { state: roomkey } = useLocation();
 
+
+  var [playercount , setPlayercount] = useState(0)
+  var [won, setwon] = useState(false);
   // Pickup state
   const itemRef = useRef([]);
   const itemSpriteRef = useRef(null);
@@ -568,6 +571,9 @@ export default function Game() {
         }
         const state = isBlue();
         socket.emit('zone', {state, roomkey});
+
+
+
          
         // tiny red debug square on top (optional, you can remove this)
         //ctx.fillStyle = '#ff0000';
@@ -682,15 +688,29 @@ export default function Game() {
     b2.Eventen();
     b3.Eventen();
 
-
+    const death = (data)=>{
+       console.log("you died")
+      setPlayercount(data)
+      console.log("death playercount", playercount)
+      setdeath(true);
+      setwon(false);
+      const won = false;
+      console.log(showdeath);
+    }
     
-    socket.on("death", ()=>{
-    console.log("you died")
-    setdeath(true);
-    console.log(showdeath);
-  })
+    const winner = (data) =>{
+       console.log("you won")
+      setPlayercount(data)
+      console.log(data)
+        setwon(true);
+       setdeath(true);
+    }
 
 
+
+
+    socket.on("death", death);
+    socket.on("winner", winner)
 
 
 
@@ -699,7 +719,8 @@ export default function Game() {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
-      socket.off("death")
+      socket.off("death",death)
+      socket.off("winner", winner)
       clearInterval(itemSpawnInterval);
     };
   }, [])
@@ -710,7 +731,7 @@ export default function Game() {
     <div className="gamecanvas">
       <canvas ref={canvasRef}></canvas>
       {showdeath &&(
-        <Game_death ></Game_death>
+        <Game_death placement= {playercount} won ={won}></Game_death>
       )}
     </div>
   );
