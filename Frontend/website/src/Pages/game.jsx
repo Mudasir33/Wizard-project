@@ -58,7 +58,7 @@ export default function Game() {
     var c = document.createElement("canvas");
     c.width = canvas.width;
     c.height = canvas.height;
-    const cctx = c.getContext("2d");
+    const cctx = c.getContext("2d", { willReadFrequently: true });
 
     // Item sprite
     itemSpriteRef.current = new window.Image();
@@ -565,6 +565,8 @@ export default function Game() {
           const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;
           const [r, g, b, a] = postion;          
            if( r === 0 && g === 0 && b === 255 && a === 128){
+            
+            
             return true;
            }
           return false;

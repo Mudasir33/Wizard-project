@@ -206,7 +206,7 @@ async function startServer() {
            const players = session.players;
 
             const aliveplayers = Object.keys(players).filter(id =>players[id].alive)
-
+            
             if(aliveplayers.length <=1 ) return;
 
             if (state == true && players[socket.id].alive && players[socket.id]) {
