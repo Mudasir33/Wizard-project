@@ -3,7 +3,6 @@ import { useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { useLocation } from "react-router-dom";
-import { io } from "socket.io-client";
 import { socket } from "../../../game/Socket";
 import user from "../../../game/User";
 
@@ -52,11 +51,6 @@ function startGame(roomkey) {
 
 
 
-
-
-
-
-
 export default function Room(){
     
     const nav = useNavigate();
@@ -69,45 +63,45 @@ export default function Room(){
 useEffect(()=> {
     socket.emit("update_sessions")
 
-    socket.on("sessions", (data) =>{
+    const sessions = (data) =>{
             console.log("room recaived")
             setRoomdata(data[roomkey]);
             setSessions(data);
-            });
-    socket.on("leftroom", (data)=>{
+            };
+
+
+    const leftroom = (data)=>{
         console.log("LEFTROOM", data)
-         nav("/") })
+         nav("/sessions") }
 
 
-
-      socket.on("players_ready", (data)=>{
+    const players_ready = (data)=>{
         console.log("reacived players ready")
-        startGame(roomkey)
+        startGame(roomkey)}
 
-    })
     
-    
-
-
-
-
-
-    socket.on("gameRoom", (data)=>{
+    const gameroom = (data)=>{
         console.log("Game room", data)
         //nav("/game", {state: data})
         //window.location.href = `http://localhost:3000?room=${data}`
         
          nav("/game", {state: data})
+    };   
 
-    });   
 
+
+
+    socket.on("sessions", sessions);
+    socket.on("leftroom", leftroom)
+    socket.on("players_ready",players_ready)
+    socket.on("gameRoom", gameroom)
 
 
       return () => {
-      socket.off('gameRoom');
-      socket.off('players_ready');
-      socket.off("sessions")
-  
+        socket.off("sessions", sessions);
+        socket.off("leftroom", leftroom)
+        socket.off("players_ready",players_ready)
+        socket.off("gameRoom", gameroom)
       
     };
           

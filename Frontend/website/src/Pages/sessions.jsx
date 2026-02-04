@@ -1,8 +1,7 @@
 import { useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
-import user from "../../../game/User";
 import { socket } from "../../../game/Socket";
-import Room from "./Room";
+
 
 
 
@@ -11,9 +10,9 @@ function joinroom(room){
     console.log("CLIENT: TRY TO JOIN ", room)
     let username = document.getElementById("username").value;
    
-    user.setusername(username) ;
 
-    socket.emit("join", user.getplayer(), room );
+
+    socket.emit("join", username, room );
 
     //console.log("username: ",username);
 
@@ -40,22 +39,29 @@ export default function Session({closesession}) {
 
     useEffect(()=> {
         socket.emit("update_sessions", null)
-        socket.on("sessions", (data) =>{
+        
+        const sessions = (data) =>{
                 console.log("sessions recaived")
-                setSessions(data);
-            });
+                setSessions(data);}
 
-         socket.on("joined", (room)=>{
-             nav("/room", {state: room})
-    })
-         
-         socket.on("joinerror", (msg)=>{
+        const joined = (room)=>{
+             nav("/room", {state: room})};
+
+        const joinerror = (msg)=>{
             console.log("CLIENT: JOINERROR")
-            alert(msg);
-         })
+            alert(msg);}
+        
+        socket.on("sessions", sessions);
+        socket.on("joined", joined);
+        socket.on("joinerror", joinerror)
+
+
+
+
      return () => {
-      socket.off('joinerror');
-      socket.off("sessions");
+        socket.off("sessions", sessions);
+        socket.off("joined", joined);
+        socket.off("joinerror", joinerror)
     };
        
     }, [])

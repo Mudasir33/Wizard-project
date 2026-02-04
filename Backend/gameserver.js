@@ -2,7 +2,7 @@
 const express = require('express');
 const http = require('http');
 const { connect } = require('http2');
-const { disconnect } = require('process');
+const { disconnect, constrainedMemory } = require('process');
 const socketIO = require('socket.io');
 const { Server } = require('socket.io');
 
@@ -15,6 +15,7 @@ const mapCreation = require('./map.js');
 const path = require('path');
 const { log, Console } = require('console');
 const { spawn } = require('child_process');
+const { resolveNaptr } = require('dns');
 
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
@@ -201,28 +202,35 @@ async function startServer() {
 
         //###############Zone##########################
         socket.on('zone', ({ state, roomkey }) => {
+            const session = sessions[roomkey];
+           const players = session.players;
 
-            if (state == true) {
-                if (sessions[roomkey].players[socket.id].health <= 0) {
+            const aliveplayers = Object.keys(players).filter(id =>players[id].alive)
 
+            if(aliveplayers.length <=1 ) return;
 
-                    sessions[roomkey].players[socket.id].alive = false;
-                }
+            if (state == true && players[socket.id].alive && players[socket.id]) {
                 sessions[roomkey].players[socket.id].health -= 1;
+                    endgame(sessions[roomkey].players, socket.id, "zone");
+                     
+              
+                 
+                
+               
             }
 
         });
 
 
         // ###################SESSION##################################
-        socket.on('join', (p, room) => {
+        socket.on('join', (username, room) => {
             console.log('join recavied');
             if (sessions[room].ongoing == true) {
                 console.log('SERVER: room ongoing')
                 socket.emit('joinerror', 'ROOM already ongoing');
                 return
             }
-            if (p.username == "") {
+            if (username == "") {
                 console.log('SERVER: Username empty');
                 socket.emit('joinerror', 'Put in username');
                 return
@@ -236,7 +244,7 @@ async function startServer() {
             }
 
             for (const player of Object.values(sessions[room].players)) {
-                if (p.username == player.username) {
+                if (username == player.username) {
                     console.log('JOIN USERNAME JOIN ERROR');
                     socket.emit('joinerror', 'USERNAMNE ALREADY TAKEN');
                     return;
@@ -246,7 +254,7 @@ async function startServer() {
 
             const index = Object.keys(sessions[room].players).length;
             sessions[room].players[socket.id] = {
-                username: p.username,
+                username: username,
                 color: colors[index],
                 ready: false,
                 x: spawn_x,
@@ -271,6 +279,9 @@ async function startServer() {
         socket.on('update_sessions', (room) => {
             socket.emit('sessions', sessions);
         });
+
+
+
 
         // ##############ROOM##################
         socket.on('ready', (room, p) => {
@@ -316,7 +327,7 @@ async function startServer() {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
                   console.log("leftroom")
-                     socket.leave(room);
+                    socket.leave(room);
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
                     return;
@@ -325,6 +336,9 @@ async function startServer() {
 
             console.log("failed to leaveroom")
         });
+
+
+
 
 
         //bara temporae
@@ -519,31 +533,13 @@ setInterval(() => {
                     console.log("HIT PLAYER", pid);
                     players[pid].health -= 10;
                     delete backendProjectiles[id];
-
-                    console.log("Player health:", players[pid].health);
-                    if (players[pid].health <= 0) {
-                        players[pid].alive = false;
-                        console.log("Player", pid, "has died.");
-                        console.log(players)
-                        const aliveplayers = Object.keys(players).filter(id => players[id].alive)
-                        console.log(aliveplayers)
-
-                        io.to(pid).emit("death", aliveplayers.length +1 )
-                        
-                        
-                        if(aliveplayers.length === 1){
-                            const winner =  aliveplayers[0]
-                            console.log("winning player")
-                            console.log("winning player", winner )
-                            io.to(winner).emit("winner", 1)
-
-                        }
-                        
+                     const reason = "Projectile";
+                  endgame(players, pid, reason);
                         //delete players[pid];
                     }
 
                 }
-            }
+            
 
             
 
@@ -570,7 +566,28 @@ setInterval(() => {
 
 
 
+function endgame(players, pid, reason){
+       if (players[pid].health <= 0 && players[pid].alive == true) {
+                        players[pid].alive = false;
+                        console.log("Player", pid, "has died by", reason);
+                    
 
+                        const aliveplayers = Object.keys(players).filter(id => players[id].alive)
+                        
+
+                        io.to(pid).emit("death", aliveplayers.length +1 )
+                        
+                        
+                        if(aliveplayers.length === 1){
+                            const winner =  aliveplayers[0]
+                            aliveplayers[0].alive = false;
+                            console.log("winning player")
+                            console.log("winning player", winner )
+                            io.to(winner).emit("winner", 1)
+
+                        }
+}
+}
 
 
 

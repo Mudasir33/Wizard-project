@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useLocation } from "react-router-dom";
 import { socket } from "../../../game/Socket";
-import { useEffect, useState } from "react";
-import { Player } from "../../../game/Player";
+
 
 
 
@@ -15,7 +14,6 @@ export default function Game_death({placement, won}){
     
 function back(){
   socket.emit("delete_user", roomkey)
-
   socket.emit("restart_game",(roomkey))
     
   nav("/")
@@ -25,18 +23,7 @@ function back(){
       console.log("placement:", placement);
     
 
-    useEffect(() => {
-
-     
-
-
-
-
-    return () => {
-  
-      
-    };
-  }, [])
+ 
 
 
     return(

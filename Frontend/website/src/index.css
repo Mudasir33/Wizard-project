@@ -82,11 +82,9 @@ div[name ="main"]{
   justify-content: center;
   text-align: center;
   width: 75%;
-  height: 100%;
+  height: 100vh;
+
   margin: 0 auto;
-  padding: 1vh 1vw;
-  height: 100%;
-  max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
   
@@ -134,10 +132,10 @@ input[name = "username"]{
   border-radius: 8px;
   border: 1px solid transparent;
   font-size: 80%;
-  font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
+  
   
 }
 
@@ -203,7 +201,6 @@ h2[name = "guide"]{
 h3[name = "guide"]{
    font-weight: 100;
    font-size: 100%;
-
    margin-bottom: 20 px;
 }
 li[name = "guide"]{

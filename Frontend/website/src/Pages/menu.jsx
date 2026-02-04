@@ -15,7 +15,6 @@ export default function menu() {
 
     if(showGuide){
       return(
-        
             <Guide guideclose={() => setGuide(false)}/>
          
         )
@@ -27,7 +26,7 @@ export default function menu() {
 
 
   return (
-    <div name="menu">
+    <div name="main">
       <div id="header">Wizard Duel</div>
 
       <div id="homeWizard">
@@ -46,7 +45,6 @@ export default function menu() {
         </div>
       </div>
 
-      <canvas id="canvas"></canvas>
     </div>
   );
 }
