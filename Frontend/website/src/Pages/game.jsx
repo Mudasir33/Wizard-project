@@ -659,17 +659,17 @@ export default function Game() {
 
         ctx.drawImage(c,0,0);
 
-        requestAnimationFrame(loop)
+        //requestAnimationFrame(loop)
         
       } catch (error) {
         console.error("Error in loop:", error);
       }
     }
 
-    requestAnimationFrame(loop);// if it's inside the interval the game will get slower
+    //requestAnimationFrame(loop);// if it's inside the interval the game will get slower
 
     setInterval(() => {
-
+      requestAnimationFrame(loop);
       
       // console.log("inputs:", playerInputs);
     }, 15);
