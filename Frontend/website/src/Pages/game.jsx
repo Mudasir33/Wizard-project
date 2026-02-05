@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { data, useLocation } from "react-router-dom";
+import { data, useLocation, useNavigate } from "react-router-dom";
 import { socket } from "../../../game/Socket";
 import { Player } from "../../../game/Player.js";
 import { Joystick } from "../../../game/joystick.js";
@@ -13,6 +13,7 @@ import Game_death from "./Game_Death.jsx";
 export default function Game() {
   //should help with 
   const { state: roomkey } = useLocation();
+  const nav = useNavigate();
 
 
   var [playercount , setPlayercount] = useState(0)
@@ -34,10 +35,17 @@ export default function Game() {
   const frontEndProjectilesRef = useRef({})
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
+  const isSpectatingRef = useRef(false);
 
   console.log("ROOM", roomkey);
 
   const [showdeath, setdeath] = useState(false);
+  const [isSpectating, setIsSpectating] = useState(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isSpectatingRef.current = isSpectating;
+  }, [isSpectating]);
 
 
   useEffect(() => {
@@ -466,10 +474,12 @@ export default function Game() {
     //####MAIN GAME LOOP#############################################################################################
     let lastTime = 0;
     function loop(timestamp) {
-      if (!gameLoopActive || !map || !frontendPlayers[socket.id]) return;
+      if (!gameLoopActive || !map) return;
+      
+      // If spectating but player not found, still allow rendering other players
+      if (!isSpectatingRef.current && !frontendPlayers[socket.id]) return;
 
       try {
-        updatePlayer();
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = "white";
         ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
@@ -482,10 +492,26 @@ export default function Game() {
         // Recompute scale dynamically to keep consistent view across resolutions
         scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
-        ctx.translate(
-          cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
-          cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
-        );
+        // If spectating (dead), center camera on map and show full map
+        if (isSpectatingRef.current) {
+          const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
+          const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
+          scaleup_constant = Math.min(
+            canvas.width / ((map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE),
+            canvas.height / ((map.layers[0]?.grid?.length || 1) * TILE_SIZE)
+          );
+          ctx.translate(
+            cameraOffsetX - mapCenterX * scaleup_constant,
+            cameraOffsetY - mapCenterY * scaleup_constant
+          );
+        } else {
+          if (!frontendPlayers[socket.id]) return;
+          ctx.translate(
+            cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
+            cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
+          );
+          updatePlayer();
+        }
 
 
         const height = map.layers[0]?.grid?.length || 0;
@@ -527,13 +553,13 @@ export default function Game() {
         //set the overlay canvas for the zone 
         const zoneWorldX = (TILE_SIZE ) / 100;
         const zoneWorldY = (TILE_SIZE ) / 100;
-        const player = frontendPlayers[socket.id];
-        const cx = cameraOffsetX + (zoneWorldX-player.x) * scaleup_constant;
-        const cy = cameraOffsetY + (zoneWorldY-player.y) * scaleup_constant;
+        const player = isSpectatingRef.current ? null : frontendPlayers[socket.id];
+        const cx = !isSpectatingRef.current ? (cameraOffsetX + (zoneWorldX-player.x) * scaleup_constant) : cameraOffsetX;
+        const cy = !isSpectatingRef.current ? (cameraOffsetY + (zoneWorldY-player.y) * scaleup_constant) : cameraOffsetY;
         const circleX= (width * TILE_SIZE* scaleup_constant);
         const circleY= (height * TILE_SIZE * scaleup_constant);
-        const playerX = player.x * scaleup_constant;
-        const playerY = player.y * scaleup_constant;
+        const playerX = !isSpectatingRef.current ? (player.x * scaleup_constant) : 0;
+        const playerY = !isSpectatingRef.current ? (player.y * scaleup_constant) : 0;
         
         //set the time for the game play
         if (startTime === null) {
@@ -571,8 +597,10 @@ export default function Game() {
            }
           return false;
         }
-        const state = isBlue();
-        socket.emit('zone', {state, roomkey});
+        if (!isSpectatingRef.current) {
+          const state = isBlue();
+          socket.emit('zone', {state, roomkey});
+        }
 
 
 
@@ -638,28 +666,60 @@ export default function Game() {
         // Reset canvas transformation to draw UI (joystick) in screen coordinates
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Draw joystick (fixed to screen, not affected by camera)
-        joystick.draw(ctx);
+        // Only draw controls if not spectating
+        if (!isSpectatingRef.current) {
+          // Draw joystick (fixed to screen, not affected by camera)
+          joystick.draw(ctx);
 
-        // Draw spell joystick and buttons (fixed to screen, not affected by camera)
-        spellJoystick.draw(ctx);
-        b1.draw(ctx);
-        // Draw button 1 icon if available
-        if (button1IconRef.current && button1IconRef.current.image && button1IconRef.current.image.complete && b1X && b1Y && BUTTON_RADIUS) {
-          ctx.save();
-          ctx.drawImage(
-            button1IconRef.current.image,
-            b1X - BUTTON_RADIUS,
-            b1Y - BUTTON_RADIUS,
-            BUTTON_RADIUS * 2,
-            BUTTON_RADIUS * 2
-          );
-          ctx.restore();
+          // Draw spell joystick and buttons (fixed to screen, not affected by camera)
+          spellJoystick.draw(ctx);
+          b1.draw(ctx);
+          // Draw button 1 icon if available
+          if (button1IconRef.current && button1IconRef.current.image && button1IconRef.current.image.complete && b1X && b1Y && BUTTON_RADIUS) {
+            ctx.save();
+            ctx.drawImage(
+              button1IconRef.current.image,
+              b1X - BUTTON_RADIUS,
+              b1Y - BUTTON_RADIUS,
+              BUTTON_RADIUS * 2,
+              BUTTON_RADIUS * 2
+            );
+            ctx.restore();
+          }
+          b2.draw(ctx);
+          b3.draw(ctx);
         }
-        b2.draw(ctx);
-        b3.draw(ctx);
 
         ctx.drawImage(c,0,0);
+        
+        // Draw spectator indicator
+        if (isSpectatingRef.current) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.fillStyle = 'rgb(0, 0, 0)';
+          ctx.font = 'bold 24px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText('SPECTATING', 20, 40);
+          
+          // Draw exit spectator button
+          const buttonWidth = 150;
+          const buttonHeight = 50;
+          const buttonX = canvas.width - buttonWidth - 20;
+          const buttonY = 20;
+          
+          ctx.fillStyle = 'rgb(0, 0, 0)';
+          ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
+          
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Home', buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+          
+          // Store button bounds for click detection
+          canvasRef.current.exitSpectateButton = { x: buttonX, y: buttonY, width: buttonWidth, height: buttonHeight };
+        }
 
         //requestAnimationFrame(loop)
         
@@ -689,6 +749,25 @@ export default function Game() {
     b1.Eventen();
     b2.Eventen();
     b3.Eventen();
+
+    // Handle spectate exit button click
+    const handleCanvasClick = (e) => {
+      if (isSpectatingRef.current && canvasRef.current.exitSpectateButton) {
+        const button = canvasRef.current.exitSpectateButton;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        if (x >= button.x && x <= button.x + button.width && 
+            y >= button.y && y <= button.y + button.height) {
+          socket.emit("delete_user", roomkey);
+          socket.emit("restart_game", roomkey);
+          nav("/");
+        }
+      }
+    };
+    
+    canvas.addEventListener('click', handleCanvasClick);
 
     const death = (data)=>{
        console.log("you died")
@@ -724,6 +803,7 @@ export default function Game() {
       socket.off("death",death)
       socket.off("winner", winner)
       clearInterval(itemSpawnInterval);
+      canvas.removeEventListener('click', handleCanvasClick);
     };
   }, [])
 
@@ -732,8 +812,8 @@ export default function Game() {
   return (
     <div className="gamecanvas">
       <canvas ref={canvasRef}></canvas>
-      {showdeath &&(
-        <Game_death placement= {playercount} won ={won}></Game_death>
+      {showdeath && !isSpectating &&(
+        <Game_death placement= {playercount} won ={won} onSpectate={() => setIsSpectating(true)}></Game_death>
       )}
     </div>
   );

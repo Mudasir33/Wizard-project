@@ -7,7 +7,7 @@ import { socket } from "../../../game/Socket";
 
 
 
-export default function Game_death({placement, won}){
+export default function Game_death({placement, won, onSpectate}){
     const nav = useNavigate();
       const { state: roomkey } = useLocation(); 
       
@@ -17,6 +17,12 @@ function back(){
   socket.emit("restart_game",(roomkey))
     
   nav("/")
+}
+
+function spectate(){
+  if(onSpectate) {
+    onSpectate();
+  }
 }
      
       console.log("deathroomkey: " ,roomkey)
@@ -34,7 +40,7 @@ function back(){
         <h1>{won ? "Victory!   " : "Dead   "}</h1>
         <h2>Place: {placement}</h2>
 
-
+        <button onClick={spectate}>Spectate</button>
         <button onClick={back}>Back</button>
     
     
