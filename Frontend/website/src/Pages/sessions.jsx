@@ -32,16 +32,16 @@ function ongoing(room){
 
 
 
-export default function Session({closesession}) {
+export default function Session() {
     const nav = useNavigate();
     const [sessions, setSessions] = useState({})
-    const HELLO = {};
+
 
     useEffect(()=> {
         socket.emit("update_sessions", null)
         
         const sessions = (data) =>{
-                console.log("sessions recaived")
+                console.log("Session: sessions recaived")
                 setSessions(data);}
 
         const joined = (room)=>{
@@ -97,8 +97,6 @@ return(
                 </tr>
             ))}
         </tbody>
-
-
     </table>
 
 <button onClick={()=> nav("/")} >Back</button>

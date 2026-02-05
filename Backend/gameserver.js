@@ -16,6 +16,7 @@ const path = require('path');
 const { log, Console } = require('console');
 const { spawn } = require('child_process');
 const { resolveNaptr } = require('dns');
+const { read } = require('fs');
 
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
@@ -42,9 +43,7 @@ let sessions = {
 };
 
 
-function updateSessions() {
-    io.emit('sessions', sessions);
-}
+
 
 ///------------------- MAP LOADING --------------------
 
@@ -108,9 +107,9 @@ async function startServer() {
 
         });
 
-
+        
         const number = Object.values(players).length + 1;
-        /*
+         /*
         players[socket.id] = {
             x: 500 * Math.random(), // random spawn
             y: 500 * Math.random(), // random spawn
@@ -209,9 +208,10 @@ async function startServer() {
             
             if(aliveplayers.length <=1 ) return;
 
-            if (state == true && players[socket.id].alive && players[socket.id]) {
+            if(!players[socket.id]){return}
+            if (state == true && players[socket.id].alive) {
                 sessions[roomkey].players[socket.id].health -= 1;
-                    endgame(sessions[roomkey].players, socket.id, "zone");
+                endgame(sessions[roomkey].players, socket.id, "zone");
                      
               
                  
@@ -222,16 +222,16 @@ async function startServer() {
         });
 
 
-        // ###################SESSION##################################
-        socket.on('join', (username, room) => {
+        //###################SESSION##################################
+        const join =(username, room) => {
             console.log('join recavied');
             if (sessions[room].ongoing == true) {
-                console.log('SERVER: room ongoing')
+                //console.log('SERVER: room ongoing')
                 socket.emit('joinerror', 'ROOM already ongoing');
                 return
             }
             if (username == "") {
-                console.log('SERVER: Username empty');
+                //console.log('SERVER: Username empty');
                 socket.emit('joinerror', 'Put in username');
                 return
             }
@@ -270,26 +270,32 @@ async function startServer() {
             spawn_x += 30;
 
             socket.join(room);
-            console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
+            //console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
             sessions[room].move[socket.id] = { dx: 0, dy: 0 };
             io.emit('sessions', sessions);
             socket.emit('joined', room);
-        });
-
-        socket.on('update_sessions', (room) => {
+        }
+        
+        const update_sessios =()=>{
+            console.log("update sessions")
             socket.emit('sessions', sessions);
-        });
+        }
+
+
+        socket.on('join', join);
+        socket.on('update_sessions', update_sessios);
+
 
 
 
 
         // ##############ROOM##################
-        socket.on('ready', (room, p) => {
+        const ready = (room) => {
             socket.join(room);
             // console.log('Server:', p.username, 'changing ready');
             const players = sessions[room].players;
             const numplayers = Object.keys(sessions[room].players).length;
-            console.log("ready")
+           // console.log("ready")
             if (players[socket.id]) {
                 if (players[socket.id].ready == false) {
                     players[socket.id].ready = true;
@@ -310,17 +316,10 @@ async function startServer() {
                 sessions[room].ongoing = false;
             }
 
-
             io.emit('sessions', sessions);
-        });
+        }
 
-
-
-
-
-
-
-        socket.on('room_leave', (room, p) => {
+        const room_leave = (room, p) => {
             const exroom = sessions[room];
             console.log('player:', socket.id, 'leaving room', exroom.id);
             if (exroom.players[socket.id]) {
@@ -331,30 +330,27 @@ async function startServer() {
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
                     return;
-
             }
-
             console.log("failed to leaveroom")
-        });
+        }
 
-
-
-
-
-        //bara temporae
-        socket.on('delete_user', (room) => {
-            const exroom = sessions[room];
-            console.log('player:', socket.id ,'is leaving',  exroom.id);
-            if(exroom.players[socket.id]){
-                exroom.players[socket.id].ready = false;
-                delete exroom.players[socket.id]
+        const delete_user = (room) => {
+            console.log('player:', socket.id ,'is leaving',  sessions[room].id);
+            if(sessions[room].players[socket.id]){
+                sessions[room].players[socket.id].ready = false;
+                delete  sessions[room].players[socket.id]
                 socket.leave(room);
                     io.emit('sessions', sessions);
                     return;
             }
+            console.log("failed to delete player")
+        }
 
-            console.log("failed to leave session")
-        });
+
+        socket.on('ready',  ready );
+        socket.on('room_leave',  room_leave);
+        //bara temporae
+        socket.on('delete_user', delete_user);
 
 
 
@@ -573,10 +569,7 @@ function endgame(players, pid, reason){
                     
 
                         const aliveplayers = Object.keys(players).filter(id => players[id].alive)
-                        
-
                         io.to(pid).emit("death", aliveplayers.length +1 )
-                        
                         
                         if(aliveplayers.length === 1){
                             const winner =  aliveplayers[0]
