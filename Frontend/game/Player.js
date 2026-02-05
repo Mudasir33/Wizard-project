@@ -2,6 +2,8 @@
 import Character_idle from "../../Assets/character/PixelCharacter.png";
 import Character_walk_left from "../../Assets/character/PixelCharacterSheet_walkleft.png";
 import Character_walk_right from "../../Assets/character/PixelCharacterSheet_walkright.png";
+import Character_walk_up from "../../Assets/character/PixelCharacterSheet_walkup.png";
+import Character_walk_down from "../../Assets/character/PixelCharacterSheet_walkdown.png";
 export class Player {
   constructor(x, y) {
     this.username = '';
@@ -69,10 +71,10 @@ export class Player {
       this.image.src = Character_walk_left;
       this.totalFrames = 4;
     } else if (this.direction === 'up') {
-      this.image.src = Character_walk_right; // ADDING SPRITE LATER THIS IS PLACEHOLDER
+      this.image.src = Character_walk_up;
       this.totalFrames = 4;
     } else if (this.direction === 'down') {
-      this.image.src = Character_walk_right; // ADDING SPRITE LATER THIS IS PLACEHOLDER
+      this.image.src = Character_walk_down;
       this.totalFrames = 4;
     }
   }
