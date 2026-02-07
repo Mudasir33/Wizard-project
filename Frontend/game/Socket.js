@@ -1,2 +1,3 @@
 import io from "socket.io-client";
-export const socket = io('localhost:3000');
+const host = window.location.hostname;   // localhost ip for phone
+export const socket = io(`http://${host}:3000`);

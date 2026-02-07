@@ -102,7 +102,7 @@ export class Joystick{
         const distance_to_center = Math.sqrt(dx_to_center * dx_to_center + dy_to_center * dy_to_center);
         
         // Allow movement up to 2x the radius
-        if (distance_to_center > this.R * 2) {
+        if (distance_to_center > this.R * 3) {
             return;
         }
 

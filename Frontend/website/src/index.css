@@ -257,16 +257,7 @@ input {
   
 }
 
-canvas[name= "game"]{
 
-
-  display: block;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
 
 
 div[name = "game"]{
@@ -280,15 +271,11 @@ div[name = "game"]{
 
 
 
-.gamecanvas canvas {
+.gamecanvas {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-
 }
 
 

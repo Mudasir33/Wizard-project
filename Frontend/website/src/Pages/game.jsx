@@ -37,6 +37,13 @@ export default function Game() {
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
 
+
+  const joystickRef = useRef(null);
+  const spellJoystickRef = useRef(null);
+  const buttonsRef = useRef({ b1: null, b2: null, b3: null });
+
+
+
   console.log("ROOM", roomkey);
 
   const [showdeath, setdeath] = useState(false);
@@ -79,6 +86,105 @@ export default function Game() {
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
     let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+
+
+
+
+
+
+
+///////////////////////////CANVAS/interface RESIZE/////////////////
+    let test_h=10;
+    console.log(test_h);
+
+    function layoutUI() {
+      const cssW = window.visualViewport?.width ?? window.innerWidth;
+      const cssH = window.visualViewport?.height ?? window.innerHeight;
+
+     // Sizes (in px, scaled)
+      const JOYSTICK_RADIUS = cssW * 0.03;
+      const BUTTON_RADIUS   = cssW * 0.025;
+
+      // Padding as % of width/height
+      const EDGE_PADDING_X  = cssW * 0.15;
+      const EDGE_PADDING_Y  = cssH * 0.3;
+
+      // Joystick positions
+      const joystickX = EDGE_PADDING_X + JOYSTICK_RADIUS;
+      const joystickY = cssH - EDGE_PADDING_Y - JOYSTICK_RADIUS;
+
+      const spellJoystickX = cssW - EDGE_PADDING_X - JOYSTICK_RADIUS;
+      const spellJoystickY = cssH - EDGE_PADDING_Y - JOYSTICK_RADIUS;
+      
+      // Buttons: diagonal/vertical stack to the left and above the right joystick
+      const buttonSpacing = BUTTON_RADIUS * 1.3;
+      const b1X = spellJoystickX;
+      const b1Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 2.2;
+      const b2X = spellJoystickX - buttonSpacing * 2.2;
+      const b2Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 1.15;
+      const b3X = spellJoystickX - buttonSpacing * 3.2;
+      const b3Y = spellJoystickY;
+
+      // Create UI
+      joystickRef.current = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
+      joystickRef.current.attachEvents(canvas);
+      spellJoystickRef.current = new Joystick(spellJoystickX, spellJoystickY, JOYSTICK_RADIUS);
+      spellJoystickRef.current.attachEvents(canvas);
+
+      buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
+      buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
+      buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
+      
+      buttonsRef.current.b1.setCanvas(canvas);
+      buttonsRef.current.b2.setCanvas(canvas);
+      buttonsRef.current.b3.setCanvas(canvas);
+      buttonsRef.current.b1.Eventen();
+      buttonsRef.current.b2.Eventen();
+      buttonsRef.current.b3.Eventen();
+    }
+    const scale = window.devicePixelRatio;// Change to 1 on retina screens to see 
+      
+    function pixelRatio(params) {
+
+      const vw =  window.innerWidth;
+      const vh =   window.innerHeight;
+      
+      canvas.style.width = `${vw}px`;
+      canvas.style.height = `${vh}px`;
+      
+      
+      canvas.width = Math.floor(vw * scale);
+      canvas.height = Math.floor(vh * scale);
+      console.log("scala", canvas.height);
+      
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      layoutUI();
+    }
+    
+
+
+    let remove = null;
+    function watchScale(params) {
+        remove?.();
+        const mq = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+        const onChange = () => { pixelRatio(); watchScale(); };
+        mq.addEventListener("change", onChange);
+        remove = () => mq.removeEventListener("change", onChange);
+    }
+    pixelRatio();
+    watchScale();
+    console.log("efter",canvas.height);
+    //window.addEventListener("resize", pixelRatio);
+    window.visualViewport.addEventListener("resize", pixelRatio); //to change the size of safari
+
+
+
+
+
+
+
+
+
 
 
     //zone radius and time
@@ -293,7 +399,10 @@ export default function Game() {
     let spelllist = [];
     let previous_state = false;
 
-    // Sizes (in px, scaled)
+    
+    
+    
+     // Sizes (in px, scaled)
     const JOYSTICK_RADIUS = canvas.width * 0.03;
     const BUTTON_RADIUS = canvas.width * 0.025;
 
@@ -317,13 +426,14 @@ export default function Game() {
     const b3Y = spellJoystickY;
 
     // Create UI
-    const joystick = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
-    joystick.attachEvents(canvas);
-    const spellJoystick = new Joystick(spellJoystickX, spellJoystickY, JOYSTICK_RADIUS);
-    spellJoystick.attachEvents(canvas);
-    const b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
-    const b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
-    const b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
+    joystickRef.current = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
+    joystickRef.current.attachEvents(canvas);
+    spellJoystickRef.current = new Joystick(spellJoystickX, spellJoystickY, JOYSTICK_RADIUS);
+    spellJoystickRef.current.attachEvents(canvas);
+
+    buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
+    buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
+    buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
     
     function updatePlayer() {
             // Check for item pickup (collision)
@@ -361,6 +471,7 @@ export default function Game() {
       }
 
       // Check joystick input (mobile)
+      const joystick = joystickRef.current;
       if (joystick.isPressed) {
         dx = joystick.dx;
         dy = joystick.dy;
@@ -403,22 +514,20 @@ export default function Game() {
 
 
       // Update spell direction from right joystick FIRST
-      direction.x = spellJoystick.dx;
-      direction.y = spellJoystick.dy;
+      direction.x = spellJoystickRef.current.dx;
+      direction.y = spellJoystickRef.current.dy;
 
       // Save last valid direction (for when joystick is released and resets to 0)
-      if (spellJoystick.dx !== 0 || spellJoystick.dy !== 0) {
-        lastValidDirection.x = spellJoystick.dx;
-        lastValidDirection.y = spellJoystick.dy;
+      if (spellJoystickRef.current.dx !== 0 || spellJoystickRef.current.dy !== 0) {
+        lastValidDirection.x = spellJoystickRef.current.dx;
+        lastValidDirection.y = spellJoystickRef.current.dy;
       }
 
       // Log right joystick state for debugging
-      if (spellJoystick.isPressed) {
-       // console.log("Right joystick active - Direction:", direction, "isPressed:", spellJoystick.isPressed);
-      }
+    
 
       // SAVE direction BEFORE state change happens
-      if (previous_state == true && spellJoystick.isPressed == false) {
+      if (previous_state == true && spellJoystickRef.current.isPressed == false) {
         // Joystick was released - use LAST VALID direction, not current (which is now 0)
         let spellToCast = "magic_missile";
         if (equippedSpellRef.current) {
@@ -431,7 +540,7 @@ export default function Game() {
         spellCreate(spellToCast, lastValidDirection, roomkey);
       }
       // Update state AFTER we process the release
-      previous_state = spellJoystick.isPressed;
+      previous_state = spellJoystickRef.current.isPressed;
     }
 
     //####SPELL CREATION#############################################################################################
@@ -482,7 +591,7 @@ export default function Game() {
       try {
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = "white";
-        ctx.fillRect(-10, -10, screen.width * scaleup_constant, screen.height * scaleup_constant);
+        ctx.fillRect(-10, -10, canvas.width * scaleup_constant, canvas.height * scaleup_constant);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         // Center camera on player (same behavior on mobile and desktop)
@@ -664,16 +773,17 @@ export default function Game() {
         */
 
         // Reset canvas transformation to draw UI (joystick) in screen coordinates
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
         // Only draw controls if not spectating
         if (!isSpectatingRef.current) {
           // Draw joystick (fixed to screen, not affected by camera)
+          const joystick = joystickRef.current;
           joystick.draw(ctx);
 
           // Draw spell joystick and buttons (fixed to screen, not affected by camera)
-          spellJoystick.draw(ctx);
-          b1.draw(ctx);
+          spellJoystickRef.current.draw(ctx);
+          buttonsRef.current.b1.draw(ctx);
           // Draw button 1 icon if available
           if (button1IconRef.current && button1IconRef.current.image && button1IconRef.current.image.complete && b1X && b1Y && BUTTON_RADIUS) {
             ctx.save();
@@ -686,15 +796,15 @@ export default function Game() {
             );
             ctx.restore();
           }
-          b2.draw(ctx);
-          b3.draw(ctx);
+          buttonsRef.current.b2.draw(ctx);
+          buttonsRef.current.b3.draw(ctx);
         }
 
         ctx.drawImage(c,0,0);
         
         // Draw spectator indicator
         if (isSpectatingRef.current) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.setTransform(scale, 0, 0, scale, 0, 0);
           ctx.fillStyle = 'rgb(0, 0, 0)';
           ctx.font = 'bold 24px Arial';
           ctx.textAlign = 'left';
@@ -743,12 +853,13 @@ export default function Game() {
     //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
     // Setup button event handlers
 
-    b1.setCanvas(canvas);
-    b2.setCanvas(canvas);
-    b3.setCanvas(canvas);
-    b1.Eventen();
-    b2.Eventen();
-    b3.Eventen();
+    buttonsRef.current.b1.setCanvas(canvas);
+    buttonsRef.current.b2.setCanvas(canvas);
+    buttonsRef.current.b3.setCanvas(canvas);
+    buttonsRef.current.b1.Eventen();
+    buttonsRef.current.b2.Eventen();
+    buttonsRef.current.b3.Eventen();
+
 
     // Handle spectate exit button click
     const handleCanvasClick = (e) => {
@@ -810,8 +921,8 @@ export default function Game() {
 
 
   return (
-    <div className="gamecanvas">
-      <canvas ref={canvasRef}></canvas>
+    <div >
+      <canvas className="gamecanvas" ref={canvasRef}></canvas>
       {showdeath && !isSpectating &&(
         <Game_death placement= {playercount} won ={won} onSpectate={() => setIsSpectating(true)}></Game_death>
       )}
