@@ -174,7 +174,7 @@ export default function Game() {
     pixelRatio();
     watchScale();
     console.log("efter",canvas.height);
-    //window.addEventListener("resize", pixelRatio);
+    window.addEventListener("resize", pixelRatio);
     window.visualViewport.addEventListener("resize", pixelRatio); //to change the size of safari
 
 
