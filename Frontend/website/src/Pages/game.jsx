@@ -424,7 +424,7 @@ export default function Game() {
     const b2Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 1.15;
     const b3X = spellJoystickX - buttonSpacing * 3.2;
     const b3Y = spellJoystickY;
-
+/*
     // Create UI
     joystickRef.current = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
     joystickRef.current.attachEvents(canvas);
@@ -434,7 +434,7 @@ export default function Game() {
     buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
     buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
     buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
-    
+    */
     function updatePlayer() {
             // Check for item pickup (collision)
             for (let i = itemRef.current.length - 1; i >= 0; i--) {
@@ -852,14 +852,14 @@ export default function Game() {
 
     //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
     // Setup button event handlers
-
+/*
     buttonsRef.current.b1.setCanvas(canvas);
     buttonsRef.current.b2.setCanvas(canvas);
     buttonsRef.current.b3.setCanvas(canvas);
     buttonsRef.current.b1.Eventen();
     buttonsRef.current.b2.Eventen();
     buttonsRef.current.b3.Eventen();
-
+*/
 
     // Handle spectate exit button click
     const handleCanvasClick = (e) => {
