@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
-const { log, //console } = require('//console');
+const { log, console } = require('console');
 const { spawn } = require('child_process');
 const { resolveNaptr } = require('dns');
 const { read } = require('fs');
@@ -599,7 +599,7 @@ setInterval(() => {
     }
 }, ITEM_SPAWN_INTERVAL);
 
-startServer().catch(//console.error);
+startServer().catch();
 
 server.listen(3000, '0.0.0.0', () => {
     //console.log('server start on all interfaces');
