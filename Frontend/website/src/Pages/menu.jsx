@@ -26,7 +26,7 @@ export default function menu() {
 
 
   return (
-    <div name="main" content= "user-scalable=no">
+    <div name="main" content= "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
       <div id="header">Wizard Duel</div>
 
       <div id="homeWizard">
