@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const tmx = require('tmx-parser');
 const mapCreation = require('./map.js');
 const path = require('path');
-const { log, Console } = require('console');
+const { log, //console } = require('//console');
 const { spawn } = require('child_process');
 const { resolveNaptr } = require('dns');
 const { read } = require('fs');
@@ -82,10 +82,10 @@ const MAX_ROOM = 5;
 async function startServer() {
     const Map2d = await mapCreation();
     obj = Map2d.objectLayers[0];
-    console.log('TEST OBJECT:', Map2d);
+   // //console.log('TEST OBJECT:', Map2d);
 
     io.on('connection', (socket) => {
-        console.log('connected:', socket.id);
+        //console.log('connected:', socket.id);
 
         // Send current items to new client
         socket.on('Game', (room) => {
@@ -95,7 +95,7 @@ async function startServer() {
             const test_room = room;
             socket.join(room);
             sessions[room].map = Map2d;
-            console.log("Game starting:", room);
+            //console.log("Game starting:", room);
             socket.emit('gameRoom', room);
 
         });
@@ -121,22 +121,22 @@ async function startServer() {
         };
 
         playerInput[socket.id] = { dx: 0, dy: 0 };
-        console.log(players);
+        //console.log(players);
         */
 
         socket.on('disconnect', (reason) => {
-            console.log(reason);
+            //console.log(reason);
 
             delete players[socket.id];
             delete playerInput[socket.id];
-            console.log('player disconneted', socket.id);
+            //console.log('player disconneted', socket.id);
             const number = Object.values(players).length + 1;
 
             io.emit('updatePlayers', players);
         });
 
         socket.on('keyup', (key, room) => {
-            //console.log(room);
+            ////console.log(room);
             if (!sessions[room].move[socket.id]) return;
             if (key == 'KeyW' || key == 'KeyS') sessions[room].move[socket.id].dy = 0;
             if (key == 'KeyA' || key == 'KeyD') sessions[room].move[socket.id].dx = 0;
@@ -145,7 +145,7 @@ async function startServer() {
         socket.on('movement', ({ dx, dy, sequenceNumber, roomkey }) => {
 
 
-            //console.log("MOVEMENT ROOM", roomkey);
+            ////console.log("MOVEMENT ROOM", roomkey);
 
             if (!sessions[roomkey].move[socket.id] || !sessions[roomkey].players[socket.id] || !sessions[roomkey]) return;
             sessions[roomkey].players[socket.id].sequenceNumber = sequenceNumber;
@@ -159,7 +159,7 @@ async function startServer() {
         socket.on('pickupItem', ({ room, itemId }) => {
             const items = roomItems[room];
             if (!items) {
-                console.warn(`pickupItem: No items array for room '${room}'`);
+                //console.warn(`pickupItem: No items array for room '${room}'`);
                 return;
             }
             const idx = items.findIndex(item => item.id === itemId);
@@ -183,7 +183,7 @@ async function startServer() {
 
             if (sessions[roomkey].players[socket.id].alive === false) return; // dead players can't shoot
             projectileId += 1;
-            //console.log("SPELL", roomkey);
+            ////console.log("SPELL", roomkey);
 
 
             sessions[roomkey].backendProjectiles[projectileId] = {
@@ -196,7 +196,7 @@ async function startServer() {
                 speed: 100
             };
 
-            console.log(sessions[roomkey].backendProjectiles);
+            //console.log(sessions[roomkey].backendProjectiles);
         });
 
         //###############Zone##########################
@@ -224,28 +224,28 @@ async function startServer() {
 
         //###################SESSION##################################
         const join =(username, room) => {
-            console.log('join recavied');
+            //console.log('join recavied');
             if (sessions[room].ongoing == true) {
-                //console.log('SERVER: room ongoing')
+                ////console.log('SERVER: room ongoing')
                 socket.emit('joinerror', 'ROOM already ongoing');
                 return
             }
             if (username == "") {
-                //console.log('SERVER: Username empty');
+                ////console.log('SERVER: Username empty');
                 socket.emit('joinerror', 'Put in username');
                 return
             }
 
             if (Object.keys(sessions[room].players).length >= 10) {
                 // is room full
-                console.log('SERVER: try to join full room ');
+                //console.log('SERVER: try to join full room ');
                 socket.emit('joinerror', 'ROOM FULL');
                 return;
             }
 
             for (const player of Object.values(sessions[room].players)) {
                 if (username == player.username) {
-                    console.log('JOIN USERNAME JOIN ERROR');
+                    //console.log('JOIN USERNAME JOIN ERROR');
                     socket.emit('joinerror', 'USERNAMNE ALREADY TAKEN');
                     return;
                 }
@@ -270,14 +270,14 @@ async function startServer() {
             spawn_x += 30;
 
             socket.join(room);
-            //console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
+            ////console.log("ROOM MEMBERS:", io.sockets.adapter.rooms.get(room));
             sessions[room].move[socket.id] = { dx: 0, dy: 0 };
             io.emit('sessions', sessions);
             socket.emit('joined', room);
         }
         
         const update_sessios =()=>{
-            console.log("update sessions")
+            //console.log("update sessions")
             socket.emit('sessions', sessions);
         }
 
@@ -292,10 +292,10 @@ async function startServer() {
         // ##############ROOM##################
         const ready = (room) => {
             socket.join(room);
-            // console.log('Server:', p.username, 'changing ready');
+            // //console.log('Server:', p.username, 'changing ready');
             const players = sessions[room].players;
             const numplayers = Object.keys(sessions[room].players).length;
-           // console.log("ready")
+           // //console.log("ready")
             if (players[socket.id]) {
                 if (players[socket.id].ready == false) {
                     players[socket.id].ready = true;
@@ -306,10 +306,10 @@ async function startServer() {
                     sessions[room].numready = sessions[room].numready - 1;
                 }
             }
-            console.log(sessions[room].numready / numplayers)
+            //console.log(sessions[room].numready / numplayers)
             if (sessions[room].numready / numplayers >= 0.51 && numplayers >= 2) {
                 sessions[room].ongoing = true;
-                console.log("emit players ready")
+                //console.log("emit players ready")
                 io.to(room).emit("players_ready", room);
             }
             else {
@@ -321,21 +321,21 @@ async function startServer() {
 
         const room_leave = (room, p) => {
             const exroom = sessions[room];
-            console.log('player:', socket.id, 'leaving room', exroom.id);
+            //console.log('player:', socket.id, 'leaving room', exroom.id);
             if (exroom.players[socket.id]) {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                  console.log("leftroom")
+                  //console.log("leftroom")
                     socket.leave(room);
                     socket.emit('leftroom', sessions);
                     io.emit('sessions', sessions);
                     return;
             }
-            console.log("failed to leaveroom")
+            //console.log("failed to leaveroom")
         }
 
         const delete_user = (room) => {
-            console.log('player:', socket.id ,'is leaving',  sessions[room].id);
+            //console.log('player:', socket.id ,'is leaving',  sessions[room].id);
             if(sessions[room].players[socket.id]){
                 sessions[room].players[socket.id].ready = false;
                 delete  sessions[room].players[socket.id]
@@ -343,7 +343,7 @@ async function startServer() {
                     io.emit('sessions', sessions);
                     return;
             }
-            console.log("failed to delete player")
+            //console.log("failed to delete player")
         }
 
 
@@ -357,9 +357,9 @@ async function startServer() {
         socket.on("restart_game",(roomkey)=>{
             const room = sessions[roomkey];
             const players = Object.keys(room.players)
-            console.log("playes left in session: ", players.length)
+            //console.log("playes left in session: ", players.length)
             if(players.length === 0){
-            console.log("restetsession")
+            //console.log("restetsession")
             room.backendProjectiles = {};
             room.players =  {};
             room.numready = 0;
@@ -436,7 +436,7 @@ setInterval(() => {
         const obj = roomInfo.map
 
           
- //console.log("map", roomInfo.map.objectLayers[0].obj);
+ ////console.log("map", roomInfo.map.objectLayers[0].obj);
         for (const id in players) {
             const player = players[id];
             const input = playerInput[id];
@@ -445,7 +445,7 @@ setInterval(() => {
 
 
 
-            //console.log("input:", players);
+            ////console.log("input:", players);
             if (!input) continue;
 
             let dx = input.dx;
@@ -526,7 +526,7 @@ setInterval(() => {
             for (const pid in players) {
                 if (ProjectilePlayerCollision(projectile, players[pid])) {
                     if (pid === projectile.playerId || players[pid].alive === false) break; // skip if the projectile hit the shooter or if the player is already dead
-                    console.log("HIT PLAYER", pid);
+                    //console.log("HIT PLAYER", pid);
                     players[pid].health -= 10;
                     delete backendProjectiles[id];
                      const reason = "Projectile";
@@ -565,7 +565,7 @@ setInterval(() => {
 function endgame(players, pid, reason){
        if (players[pid].health <= 0 && players[pid].alive == true) {
                         players[pid].alive = false;
-                        console.log("Player", pid, "has died by", reason);
+                        //console.log("Player", pid, "has died by", reason);
                     
 
                         const aliveplayers = Object.keys(players).filter(id => players[id].alive)
@@ -574,8 +574,8 @@ function endgame(players, pid, reason){
                         if(aliveplayers.length === 1){
                             const winner =  aliveplayers[0]
                             aliveplayers[0].alive = false;
-                            console.log("winning player")
-                            console.log("winning player", winner )
+                            //console.log("winning player")
+                            //console.log("winning player", winner )
                             io.to(winner).emit("winner", 1)
 
                         }
@@ -599,10 +599,10 @@ setInterval(() => {
     }
 }, ITEM_SPAWN_INTERVAL);
 
-startServer().catch(console.error);
+startServer().catch(//console.error);
 
 server.listen(3000, '0.0.0.0', () => {
-    console.log('server start on all interfaces');
+    //console.log('server start on all interfaces');
 });
 
 
