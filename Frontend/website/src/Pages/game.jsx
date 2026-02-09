@@ -659,6 +659,7 @@ export default function Game() {
             }
           }
         }
+        /*
         //set the overlay canvas for the zone 
         const zoneWorldX = (TILE_SIZE ) / 100;
         const zoneWorldY = (TILE_SIZE ) / 100;
@@ -706,14 +707,15 @@ export default function Game() {
            }
           return false;
         }
+
         if (!isSpectatingRef.current) {
           const state = isBlue();
           socket.emit('zone', {state, roomkey});
         }
 
-
-
-         
+      
+          */
+ 
         // tiny red debug square on top (optional, you can remove this)
         //ctx.fillStyle = '#ff0000';
         //ctx.fillRect(0, 0, 10 * scaleup_constant, 10 * scaleup_constant);
