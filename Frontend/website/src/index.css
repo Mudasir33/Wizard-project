@@ -272,11 +272,13 @@ div[name = "game"]{
 
 
 
+
 .gamecanvas {
   position: fixed;
   inset: 0;
   margin: 0;
   padding: 0;
+  touch-action: none; /* Prevent browser gestures like pinch-zoom and double-tap zoom */
 }
 
 

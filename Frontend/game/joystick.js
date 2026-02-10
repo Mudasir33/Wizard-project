@@ -42,6 +42,9 @@ export class Joystick{
     attachEvents(canvasElement) {
         this.canvas = canvasElement;
         this.setupEventListeners();
+        // Prevent default gesture/zoom on touchstart/touchmove
+        this.canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     }
 
     setupEventListeners() {
@@ -50,8 +53,8 @@ export class Joystick{
         
         if (!this.canvas) return;
         
-        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
-        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
         this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
     }
 

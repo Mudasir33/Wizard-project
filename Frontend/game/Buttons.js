@@ -39,14 +39,13 @@ export class Button{
         this.eventsAttached = true;
         
         this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             if (!e.touches || e.touches.length === 0) return;
-            
             // Find touch that is within this button's area
             for (let touch of e.touches) {
                 const rect = this.canvas.getBoundingClientRect();
                 const px = touch.clientX - rect.left;
                 const py = touch.clientY - rect.top;
-               
                 if (this.isTouchInArea(px, py)) {
                     this.touchId = touch.identifier;
                     this.isPressed = true;
@@ -55,7 +54,7 @@ export class Button{
                     break;
                 }
             }
-        });
+        }, { passive: false });
         
         this.canvas.addEventListener('touchend', (e) => {
             // Check if our touchId ended
@@ -66,12 +65,11 @@ export class Button{
                     break;
                 }
             }
-            
             if (!touchExists && this.touchId !== null) {
                 this.isPressed = false;
                 this.touchId = null;
             }
-        });
+        }, { passive: false });
     }
 
     isTouchInArea(x, y) {
