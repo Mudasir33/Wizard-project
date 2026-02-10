@@ -1,9 +1,7 @@
 
-import Character_idle from "../../Assets/character/PixelCharacter.png";
-import Character_walk_left from "../../Assets/character/PixelCharacterSheet_walkleft.png";
-import Character_walk_right from "../../Assets/character/PixelCharacterSheet_walkright.png";
-import Character_walk_up from "../../Assets/character/PixelCharacterSheet_walkup.png";
-import Character_walk_down from "../../Assets/character/PixelCharacterSheet_walkdown.png";
+
+import Character_animation_sheet from "../../Assets/character/SpritesheetWalkingCombined.png";
+
 export class Player {
   constructor(x, y) {
     this.username = '';
@@ -16,20 +14,21 @@ export class Player {
     this.maxHealth = 100;
     this.alive = true;
     this.image = new Image();
-    this.image.src = Character_walk_right;
+    this.image.src = Character_animation_sheet;
     this.speed = 100;
     this.dx = 0;
     this.dy = 0;
     this.direction = 'idle'; // idle, up, down, left, right
 
     // Hitbox dimensions (adjust as needed)
-    this.width = 11;
-    this.height = 15;
+    this.width = 16;
+    this.height = 16;
 
     //animation properties
-    this.framewidth = 11;
-    this.frameheight = 15;
+    this.framewidth = 16;
+    this.frameheight = 16;
     this.currentFrame = 0;
+    this.currentFrameY = 0;
     this.totalFrames = 4;
     this.frameDuration = 0.25; // seconds
     this.frameTime = 0;
@@ -61,20 +60,20 @@ export class Player {
     
     //update image based on direction
     if (this.direction === 'idle') {
-      this.image.src = Character_idle;
+      this.currentFrameY = 4;
       this.totalFrames = 1;
       this.currentFrame = 0;
     } else if (this.direction === 'right') {
-      this.image.src = Character_walk_right;
+      this.currentFrameY = 2;
       this.totalFrames = 4;
     } else if (this.direction === 'left') {
-      this.image.src = Character_walk_left;
+      this.currentFrameY = 3;
       this.totalFrames = 4;
     } else if (this.direction === 'up') {
-      this.image.src = Character_walk_up;
+      this.currentFrameY = 1;
       this.totalFrames = 4;
     } else if (this.direction === 'down') {
-      this.image.src = Character_walk_down;
+      this.currentFrameY = 0;
       this.totalFrames = 4;
     }
   }
@@ -110,18 +109,24 @@ export class Player {
 
   draw(ctx, scaleup_constant) {
     if (!this.alive || !this.imageLoaded) return;
+    // Force nearest-neighbor rendering and draw on integer pixels to avoid blurring
+    try { ctx.imageSmoothingEnabled = false; } catch (e) {}
+    const dx = Math.round(this.x * scaleup_constant);
+    const dy = Math.round(this.y * scaleup_constant);
+    const dw = Math.round(this.framewidth * scaleup_constant);
+    const dh = Math.round(this.frameheight * scaleup_constant);
     ctx.drawImage(
       this.image,
       this.currentFrame * this.framewidth,
-      0,
+      this.currentFrameY * this.frameheight,
       this.framewidth,
       this.frameheight,
-      this.x * scaleup_constant,
-      this.y * scaleup_constant,
-      11 * scaleup_constant, // width
-      15 * scaleup_constant  // height
+      dx,
+      dy,
+      dw, // width
+      dh  // height
     );
-    this.drawHealthBar(ctx, this.x * scaleup_constant + (11 * scaleup_constant) / 2, this.y * scaleup_constant, scaleup_constant);
+    this.drawHealthBar(ctx, this.x * scaleup_constant + (16 * scaleup_constant) / 2, this.y * scaleup_constant, scaleup_constant);
   }
 
 

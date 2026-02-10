@@ -281,6 +281,15 @@ div[name = "game"]{
   touch-action: none; /* Prevent browser gestures like pinch-zoom and double-tap zoom */
 }
 
+/*
+ Ensure canvas scales crisply for pixel-art */
+ 
+.gamecanvas, .gamecanvas canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
 
 
 .death-overlay{

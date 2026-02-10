@@ -64,8 +64,9 @@ export default function Game() {
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const ctx = canvas.getContext('2d');
+    let ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingQuality = 'low';
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
     
@@ -85,7 +86,8 @@ export default function Game() {
     const isMobile = window.innerWidth < 768;
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
-    let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+    //let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+    let scaleup_constant = Math.max(1, Math.floor(canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE)))
 
 
 
@@ -152,12 +154,15 @@ export default function Game() {
       canvas.style.width = `${vw}px`;
       canvas.style.height = `${vh}px`;
       
+      ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingQuality = 'low';
+
       
       canvas.width = Math.floor(vw * scale);
       canvas.height = Math.floor(vh * scale);
       console.log("scala", canvas.height);
-      
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      //ctx.setTransform(scale, 0, 0, scale, 0, 0);
       layoutUI();
     }
     
@@ -337,8 +342,8 @@ export default function Game() {
       const obj = object.objectLayers[0].obj; 
         const player_x =  player.x;
         const player_y = player.y;
-        const player_width =  11;
-        const player_height =  15;
+        const player_width =  16;
+        const player_height =  16;
         for (let j = 0; j < obj.objects.length; j++) {
             const wallX = obj.objects[j].x;  
 
@@ -589,26 +594,33 @@ export default function Game() {
       if (!isSpectatingRef.current && !frontendPlayers[socket.id]) return;
 
       try {
+        // Use CSS pixels for layout (canvas.width/height are device pixels)
+        const cssWidth = canvas.width / scale;
+        const cssHeight = canvas.height / scale;
+
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = "white";
-        ctx.fillRect(-10, -10, canvas.width * scaleup_constant, canvas.height * scaleup_constant);
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        // Ensure the drawing transform maps CSS pixels to device pixels
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.fillRect(-10, -10, cssWidth + 20, cssHeight + 20);
 
-        // Center camera on player (same behavior on mobile and desktop)
-        const cameraOffsetX = canvas.width / 2;
-        const cameraOffsetY = canvas.height / 2;
+        // Center camera on player (CSS pixel coordinates)
+        const cameraOffsetX = cssWidth / 2;
+        const cameraOffsetY = cssHeight / 2;
 
         // Recompute scale dynamically to keep consistent view across resolutions
-        scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
+        // Use CSS pixels (canvas.width is device pixels) to avoid double-scaling
+        scaleup_constant = Math.max(1, Math.floor((canvas.width / scale) / (DESIRED_TILES_ACROSS * TILE_SIZE)));
 
         // If spectating (dead), center camera on map and show full map
         if (isSpectatingRef.current) {
           const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
           const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
-          scaleup_constant = Math.min(
-            canvas.width / ((map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE),
-            canvas.height / ((map.layers[0]?.grid?.length || 1) * TILE_SIZE)
-          );
+          // compute scale in CSS pixels and ensure at least 1 to avoid zero-scale
+          scaleup_constant = Math.max(1, Math.floor(Math.min(
+            (canvas.width / scale) / ((map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE),
+            (canvas.height / scale) / ((map.layers[0]?.grid?.length || 1) * TILE_SIZE)
+          )));
           ctx.translate(
             cameraOffsetX - mapCenterX * scaleup_constant,
             cameraOffsetY - mapCenterY * scaleup_constant
@@ -842,12 +854,35 @@ export default function Game() {
 
     //requestAnimationFrame(loop);// if it's inside the interval the game will get slower
 
+
+      /* TA EJ BORT FÖRSÖKER FIXA BÄTTRE SERVER 
+    let accumulator = 0;
+    const TICK_RATE = 30; // 30 ms per tick = ~33 ticks per second
+    const TICK_MS = 1000 / TICK_RATE;
+    let lastTimestamp = 0;
+    let currentTick = 0;
+
+    function render(timestamp) {
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+      accumulator += deltaTime;
+
+      while (accumulator >= TICK_MS) {
+        loop();
+        accumulator -= TICK_MS;
+        currentTick++;
+      }
+
+      requestAnimationFrame(render);
+    }*/
+    
+      
     setInterval(() => {
       requestAnimationFrame(loop);
       
       // console.log("inputs:", playerInputs);
     }, 15);
-
+    
 
 
   
@@ -907,7 +942,7 @@ export default function Game() {
     socket.on("winner", winner)
 
 
-
+//requestAnimationFrame(render);
 
     return () => {
       socket.off('map', mapOn);
@@ -920,7 +955,7 @@ export default function Game() {
     };
   }, [])
 
-
+  
 
   return (
     <div >

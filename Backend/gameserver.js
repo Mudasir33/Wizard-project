@@ -82,7 +82,7 @@ const MAX_ROOM = 5;
 async function startServer() {
     const Map2d = await mapCreation();
     obj = Map2d.objectLayers[0];
-   // //console.log('TEST OBJECT:', Map2d);
+    // //console.log('TEST OBJECT:', Map2d);
 
     io.on('connection', (socket) => {
         //console.log('connected:', socket.id);
@@ -107,22 +107,22 @@ async function startServer() {
 
         });
 
-        
-        const number = Object.values(players).length + 1;
-         /*
-        players[socket.id] = {
-            x: 500 * Math.random(), // random spawn
-            y: 500 * Math.random(), // random spawn
-            health: 100,
-            alive: true,
-            id: number,
-            speed: 100,
-            sequenceNumber: 0,
-        };
 
-        playerInput[socket.id] = { dx: 0, dy: 0 };
-        //console.log(players);
-        */
+        const number = Object.values(players).length + 1;
+        /*
+       players[socket.id] = {
+           x: 500 * Math.random(), // random spawn
+           y: 500 * Math.random(), // random spawn
+           health: 100,
+           alive: true,
+           id: number,
+           speed: 100,
+           sequenceNumber: 0,
+       };
+
+       playerInput[socket.id] = { dx: 0, dy: 0 };
+       //console.log(players);
+       */
 
         socket.on('disconnect', (reason) => {
             //console.log(reason);
@@ -202,28 +202,28 @@ async function startServer() {
         //###############Zone##########################
         socket.on('zone', ({ state, roomkey }) => {
             const session = sessions[roomkey];
-           const players = session.players;
+            const players = session.players;
 
-            const aliveplayers = Object.keys(players).filter(id =>players[id].alive)
-            
-            if(aliveplayers.length <=1 ) return;
+            const aliveplayers = Object.keys(players).filter(id => players[id].alive)
 
-            if(!players[socket.id]){return}
+            if (aliveplayers.length <= 1) return;
+
+            if (!players[socket.id]) { return }
             if (state == true && players[socket.id].alive) {
                 sessions[roomkey].players[socket.id].health -= 1;
                 endgame(sessions[roomkey].players, socket.id, "zone");
-                     
-              
-                 
-                
-               
+
+
+
+
+
             }
 
         });
 
 
         //###################SESSION##################################
-        const join =(username, room) => {
+        const join = (username, room) => {
             //console.log('join recavied');
             if (sessions[room].ongoing == true) {
                 ////console.log('SERVER: room ongoing')
@@ -275,8 +275,8 @@ async function startServer() {
             io.emit('sessions', sessions);
             socket.emit('joined', room);
         }
-        
-        const update_sessios =()=>{
+
+        const update_sessios = () => {
             //console.log("update sessions")
             socket.emit('sessions', sessions);
         }
@@ -295,7 +295,7 @@ async function startServer() {
             // //console.log('Server:', p.username, 'changing ready');
             const players = sessions[room].players;
             const numplayers = Object.keys(sessions[room].players).length;
-           // //console.log("ready")
+            // //console.log("ready")
             if (players[socket.id]) {
                 if (players[socket.id].ready == false) {
                     players[socket.id].ready = true;
@@ -325,45 +325,45 @@ async function startServer() {
             if (exroom.players[socket.id]) {
                 exroom.players[socket.id].ready = false;
                 delete exroom.players[socket.id]
-                  //console.log("leftroom")
-                    socket.leave(room);
-                    socket.emit('leftroom', sessions);
-                    io.emit('sessions', sessions);
-                    return;
+                //console.log("leftroom")
+                socket.leave(room);
+                socket.emit('leftroom', sessions);
+                io.emit('sessions', sessions);
+                return;
             }
             //console.log("failed to leaveroom")
         }
 
         const delete_user = (room) => {
             //console.log('player:', socket.id ,'is leaving',  sessions[room].id);
-            if(sessions[room].players[socket.id]){
+            if (sessions[room].players[socket.id]) {
                 sessions[room].players[socket.id].ready = false;
-                delete  sessions[room].players[socket.id]
+                delete sessions[room].players[socket.id]
                 socket.leave(room);
-                    io.emit('sessions', sessions);
-                    return;
+                io.emit('sessions', sessions);
+                return;
             }
             //console.log("failed to delete player")
         }
 
 
-        socket.on('ready',  ready );
-        socket.on('room_leave',  room_leave);
+        socket.on('ready', ready);
+        socket.on('room_leave', room_leave);
         //bara temporae
         socket.on('delete_user', delete_user);
 
 
 
-        socket.on("restart_game",(roomkey)=>{
+        socket.on("restart_game", (roomkey) => {
             const room = sessions[roomkey];
             const players = Object.keys(room.players)
             //console.log("playes left in session: ", players.length)
-            if(players.length === 0){
-            //console.log("restetsession")
-            room.backendProjectiles = {};
-            room.players =  {};
-            room.numready = 0;
-            room.ongoing = false;
+            if (players.length === 0) {
+                //console.log("restetsession")
+                room.backendProjectiles = {};
+                room.players = {};
+                room.numready = 0;
+                room.ongoing = false;
             }
 
         })
@@ -384,8 +384,8 @@ function wallCollison(object, player) {
     const obj = object.objectLayers[0].obj;
     const player_x = player.x;
     const player_y = player.y;
-    const player_width = 11;
-    const player_height = 15;
+    const player_width = 16;
+    const player_height = 16;
     for (let j = 0; j < obj.objects.length; j++) {
         const wallX = obj.objects[j].x;
 
@@ -413,8 +413,8 @@ function ProjectilePlayerCollision(projectile, player) {
     const projectile_size = 5; // assuming projectile is a square of size 5x5
     const player_x = player.x;
     const player_y = player.y;
-    const player_width = 11;
-    const player_height = 15;
+    const player_width = 16;
+    const player_height = 16;
     if (
         projectile_x < player_x + player_width &&
         projectile_x + projectile_size > player_x &&
@@ -426,22 +426,26 @@ function ProjectilePlayerCollision(projectile, player) {
     return false;
 }
 
-setInterval(() => {
+
+
+
+function gameloop(deltatime) {
+
+
+
     // Update all player positions based on input
-    
+
     for (const [roomName, roomInfo] of Object.entries(sessions)) {
         const players = roomInfo.players;
         const playerInput = roomInfo.move;
         const backendProjectiles = roomInfo.backendProjectiles;
         const obj = roomInfo.map
 
-          
- ////console.log("map", roomInfo.map.objectLayers[0].obj);
+
+        ////console.log("map", roomInfo.map.objectLayers[0].obj);
         for (const id in players) {
             const player = players[id];
             const input = playerInput[id];
-
-            
 
 
 
@@ -473,12 +477,7 @@ setInterval(() => {
 
                 }
 
-
-
-
             }
-
-
 
         }
 
@@ -519,8 +518,6 @@ setInterval(() => {
             if (wallCollison(obj, projectile) == true) {
                 delete backendProjectiles[id];
             }
-            
-
 
             // Check for collision with players
             for (const pid in players) {
@@ -529,57 +526,57 @@ setInterval(() => {
                     //console.log("HIT PLAYER", pid);
                     players[pid].health -= 10;
                     delete backendProjectiles[id];
-                     const reason = "Projectile";
-                  endgame(players, pid, reason);
-                        //delete players[pid];
-                    }
-
+                    const reason = "Projectile";
+                    endgame(players, pid, reason);
+                    //delete players[pid];
                 }
-            
 
-            
-
-
-
+            }
         }
 
         io.to(roomName).emit('updatePlayers', players);
         io.to(roomName).emit('updateProjectiles', backendProjectiles);
         io.to(roomName).emit('spawnItems', roomItems[roomName]);
     }
-   
-
-  
 
 
+};
 
 
+setInterval(gameloop, 15);
+/*
+const TICK_RATE = 30; // 30 updates per second
+const TICK_MS = 1000 / TICK_RATE; // ms per update
+let lastTickTime = process.hrtime.bigint();
 
-    
-   
-}, 15);
+function gameloop_timer() {
+    const now = process.hrtime.bigint();
+    const deltaTime = Number(now - lastTickTime) / 1e9;
+    lastTickTime = now;
 
-
-
-
-function endgame(players, pid, reason){
-       if (players[pid].health <= 0 && players[pid].alive == true) {
-                        players[pid].alive = false;
-                        //console.log("Player", pid, "has died by", reason);
-                    
-
-                        const aliveplayers = Object.keys(players).filter(id => players[id].alive)
-                        io.to(pid).emit("death", aliveplayers.length +1 )
-                        
-                        if(aliveplayers.length === 1){
-                            const winner =  aliveplayers[0]
-                            aliveplayers[0].alive = false;
-                            //console.log("winning player")
-                            //console.log("winning player", winner )
-                            io.to(winner).emit("winner", 1)
-
-                        }
+    gameloop(deltaTime);
+    setTimeout(gameloop_timer, TICK_MS);
 }
+*/
+
+function endgame(players, pid, reason) {
+    if (players[pid].health <= 0 && players[pid].alive == true) {
+        players[pid].alive = false;
+        //console.log("Player", pid, "has died by", reason);
+
+
+        const aliveplayers = Object.keys(players).filter(id => players[id].alive)
+        io.to(pid).emit("death", aliveplayers.length + 1)
+
+        if (aliveplayers.length === 1) {
+            const winner = aliveplayers[0]
+            aliveplayers[0].alive = false;
+            //console.log("winning player")
+            //console.log("winning player", winner )
+            io.to(winner).emit("winner", 1)
+
+        }
+    }
 }
 
 
@@ -606,3 +603,4 @@ server.listen(3000, '0.0.0.0', () => {
 });
 
 
+//gameloop_timer();
