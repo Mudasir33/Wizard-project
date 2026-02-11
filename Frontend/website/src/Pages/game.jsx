@@ -691,9 +691,6 @@ export default function Game() {
         const circleY= (height * TILE_SIZE * scaleup_constant);
         const playerX = !isSpectatingRef.current ? (player.x * scaleup_constant) : 0;
         const playerY = !isSpectatingRef.current ? (player.y * scaleup_constant) : 0;
-        const zoneCenterScreenX = cameraOffsetX + (zoneWorldX - player.x) * scaleup_constant;
-        const zoneCenterScreenY = cameraOffsetY + (zoneWorldY - player.y) * scaleup_constant;
-
         //set the time for the game play
         if (startTime === null) {
           startTime = timestamp;
@@ -709,7 +706,6 @@ export default function Game() {
         cctx.fill();
 
         //Shrinks the zone to end
-        
         smallRadius = startRadius * (1 - progress);
         if (smallRadius > 0) {
           cctx.globalCompositeOperation = 'destination-out';
