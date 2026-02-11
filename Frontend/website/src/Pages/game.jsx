@@ -278,14 +278,10 @@ export default function Game() {
     const playerInputs = playerInputsRef.current;
     let sequenceNumber = 0;
 
-    function OnupdatePlayer(backendPlayers, room) {
-
-
+    function OnupdatePlayer(backendPlayers, updateRoomKey) {
+      if (updateRoomKey && updateRoomKey !== roomkey) return;
       for (const id in backendPlayers) {
         const backendPlayer = backendPlayers[id];
-        //console.log(backendPlayer);
-
-
         if (!frontendPlayers[id]) {
           frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y);
         } else {
@@ -295,16 +291,11 @@ export default function Game() {
           frontendPlayers[id].alive = backendPlayer.alive;
           frontendPlayers[id].dx = backendPlayer.dx;
           frontendPlayers[id].dy = backendPlayer.dy;
-
-
           if (id === socket.id) {
-            // Update existing player position
             const lastBackendInputIndex = playerInputs.findIndex((input) => {
               return backendPlayer.sequenceNumber === input.sequenceNumber;
             });
-
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
-
             playerInputs.forEach((input) => {
               frontendPlayers[id].x += input.dx;
               frontendPlayers[id].y += input.dy;
@@ -312,25 +303,13 @@ export default function Game() {
           } else {
             frontendPlayers[id].x = backendPlayer.x;
             frontendPlayers[id].y = backendPlayer.y;
-            /*
-            gsap.to(frontendPlayers[id], {
-              x: backendPlayer.x,
-              y: backendPlayer.y,
-              duration: 0.015,
-              ease: 'linear'
-            }); */
           }
         }
-        
-
-        for (const id in frontendPlayers) {
-          if (!backendPlayers[id]) delete frontendPlayers[id];
-        }
-        // console.log(frontendPlayers);
       }
-
+      for (const id in frontendPlayers) {
+        if (!backendPlayers[id]) delete frontendPlayers[id];
+      }
     }
-
     socket.on("updatePlayers", OnupdatePlayer);
 
 
@@ -375,10 +354,10 @@ export default function Game() {
     //##########Projectiles/spells##########################################################################################
 
     const frontEndProjectiles = frontEndProjectilesRef.current;
-    function OnupdateProjectiles(backendProjectiles) {
+    function OnupdateProjectiles(backendProjectiles, updateRoomKey) {
+      if (updateRoomKey && updateRoomKey !== roomkey) return;
       for (const id in backendProjectiles) {
         const backendProjectile = backendProjectiles[id];
-
         if (!frontEndProjectiles[id]) {
           frontEndProjectiles[id] = new Spell(
             backendProjectile.x,

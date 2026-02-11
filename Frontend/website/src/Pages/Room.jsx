@@ -63,9 +63,10 @@ export default function Room(){
 useEffect(()=> {
     socket.emit("update_sessions")
 
-    const sessions = (data) =>{
+        const sessions = (data) =>{
             console.log("room recaived")
-            setRoomdata(data[roomkey]);
+            // Defensive: only update if data[roomkey] exists
+            if (data[roomkey]) setRoomdata(data[roomkey]);
             setSessions(data);
             };
 
