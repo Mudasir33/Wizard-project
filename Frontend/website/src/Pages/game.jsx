@@ -671,7 +671,7 @@ export default function Game() {
             }
           }
         }
-        /*
+        
         //set the overlay canvas for the zone 
         const zoneWorldX = (TILE_SIZE ) / 100;
         const zoneWorldY = (TILE_SIZE ) / 100;
@@ -707,7 +707,7 @@ export default function Game() {
           cctx.fill();   
           
         }
-
+/*
         //checks if player is outside zone
         function isBlue() {
           const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;

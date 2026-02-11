@@ -210,7 +210,7 @@ async function startServer() {
 
             if (!players[socket.id]) { return }
             if (state == true && players[socket.id].alive) {
-                sessions[roomkey].players[socket.id].health -= 1;
+                sessions[roomkey].players[socket.id].health -= 0.25;
                 endgame(sessions[roomkey].players, socket.id, "zone");
 
 
