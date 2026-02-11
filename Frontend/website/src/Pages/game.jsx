@@ -27,6 +27,7 @@ export default function Game() {
  
   const button1IconRef = useRef(null);
   const startTimeRef = useRef(null);
+  const radiusRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
   const startedRef = false;
@@ -74,7 +75,7 @@ export default function Game() {
     var c = document.createElement("canvas");
     c.width = canvas.width;
     c.height = canvas.height;
-    const cctx = c.getContext("2d", { willReadFrequently: true });
+    let cctx = c.getContext("2d", { willReadFrequently: true });
 
     // Item sprite
     itemSpriteRef.current = new window.Image();
@@ -158,9 +159,17 @@ export default function Game() {
       ctx.imageSmoothingEnabled = false;
       ctx.imageSmoothingQuality = 'low';
 
-      
+     
       canvas.width = Math.floor(vw * scale);
       canvas.height = Math.floor(vh * scale);
+
+      cctx = c.getContext("2d", { willReadFrequently: true });
+      c.style.width = `${vw}px`;
+      c.style.height = `${vh}px`;
+      c.width = vw;    
+      c.height = vh;    
+      radiusRef.current = Math.hypot(vw, vh)*2 ;
+
       console.log("scala", canvas.height);
       //ctx.setTransform(scale, 0, 0, scale, 0, 0);
       layoutUI();
@@ -193,10 +202,10 @@ export default function Game() {
 
 
     //zone radius and time
-    let radius =   canvas.width*2 ;
-    let smallRadius = radius;
-    const startRadius = radius;
-    const duration = 60000;
+    //let radius =  window.innerWidth  ;
+    let smallRadius = radiusRef.current;
+    const startRadius = radiusRef.current;
+    const duration = 120000;
     let startTime = startTimeRef.current;
 
     // Helper: get random walkable tile
@@ -682,7 +691,9 @@ export default function Game() {
         const circleY= (height * TILE_SIZE * scaleup_constant);
         const playerX = !isSpectatingRef.current ? (player.x * scaleup_constant) : 0;
         const playerY = !isSpectatingRef.current ? (player.y * scaleup_constant) : 0;
-        
+        const zoneCenterScreenX = cameraOffsetX + (zoneWorldX - player.x) * scaleup_constant;
+        const zoneCenterScreenY = cameraOffsetY + (zoneWorldY - player.y) * scaleup_constant;
+
         //set the time for the game play
         if (startTime === null) {
           startTime = timestamp;
@@ -698,16 +709,19 @@ export default function Game() {
         cctx.fill();
 
         //Shrinks the zone to end
+        
         smallRadius = startRadius * (1 - progress);
         if (smallRadius > 0) {
           cctx.globalCompositeOperation = 'destination-out';
           cctx.fillStyle = 'rgba(0,0,0,1)';
           cctx.beginPath();
           cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
+          //cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
           cctx.fill();   
           
         }
-/*
+
+        /*
         //checks if player is outside zone
         function isBlue() {
           const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;
