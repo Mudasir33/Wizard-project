@@ -135,7 +135,24 @@ async function startServer() {
             }
         });
         socket.on('zone', ({ state, roomkey }) => {
-            // Forward to worker if needed
+            const session = sessions[roomkey];
+            const players = session.players;
+
+            const aliveplayers = Object.keys(players).filter(id => players[id].alive)
+
+            if (aliveplayers.length <= 1) return;
+
+            if (!players[socket.id]) { return }
+            if (state == true && players[socket.id].alive) {
+                sessions[roomkey].players[socket.id].health -= 1;
+                sessions[roomkey].players[socket.id].health -= 0.25;
+                endgame(sessions[roomkey].players, socket.id, "zone");
+
+
+
+
+
+            }  // Forward to worker if needed
         });
         const join = (username, room) => {
             console.log('JOIN EVENT:', { username, room });

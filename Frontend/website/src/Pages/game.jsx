@@ -696,7 +696,6 @@ export default function Game() {
           
         }
 
-        /*
         //checks if player is outside zone
         function isBlue() {
           const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;
@@ -715,7 +714,7 @@ export default function Game() {
         }
 
       
-          */
+         
  
         // tiny red debug square on top (optional, you can remove this)
         //ctx.fillStyle = '#ff0000';
