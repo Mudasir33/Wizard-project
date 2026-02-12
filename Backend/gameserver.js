@@ -114,6 +114,19 @@ async function startServer() {
                 }
             }
         });
+        socket.on("restart_game",(roomkey)=>{
+            const room = sessions[roomkey];
+            const players = Object.keys(room.players)
+            //console.log("playes left in session: ", players.length)
+            if(players.length === 0){
+            //console.log("restetsession")
+            room.backendProjectiles = {};
+            room.players =  {};
+            room.numready = 0;
+            room.ongoing = false;
+            }
+
+        })
         socket.on('keyup', (key, room) => {
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'keyup', socketId: socket.id, key });
