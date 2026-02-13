@@ -47,15 +47,23 @@ function startRoomWorker(roomName, initialState) {
             sessions[roomName].map = clonedMap;
             sessions[roomName].items = clonedItems;
             sessions[roomName].numready = msg.state.numready;
+            let ongoing_change = ( sessions[roomName].ongoing !== msg.state.ongoing )
             sessions[roomName].ongoing = msg.state.ongoing;
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
             io.to(roomName).emit('updateProjectiles', clonedBackendProjectiles, roomName);
             io.to(roomName).emit('spawnItems', clonedItems, roomName);
-
-            io.emit('sessions', sessions);
-            if (msg.state.ongoing) {
-                io.to(roomName).emit('players_ready', roomName);
+            
+            if(!msg.state.ongoing || ongoing_change){
+                io.emit("sessions", sessions)
             }
+       
+
+         if (msg.state.ongoing) {
+                io.to(roomName).emit('players_ready', roomName);
+                
+                
+               
+        }   
         } else if (msg.type === 'joined') {
             io.sockets.sockets.get(msg.socketId)?.emit('joined', roomName);
         } else if (msg.type === 'error') {
@@ -65,6 +73,8 @@ function startRoomWorker(roomName, initialState) {
         } else if (msg.type === 'winner') {
             io.sockets.sockets.get(msg.socketId)?.emit('winner', msg.placement);
         }
+     
+
     });
     worker.on('error', (err) => {
         console.error(`Worker error in ${roomName}:`, err);
@@ -88,6 +98,8 @@ app.use(express.static('Public'));
 async function startServer() {
     const Map2d = await mapCreation();
     io.on('connection', (socket) => {
+
+
         socket.on('Game', (room) => {
             socket.emit('spawnItems', sessions[room]?.items || []);
             socket.rooms.forEach(r => {
@@ -114,19 +126,13 @@ async function startServer() {
                 }
             }
         });
-        socket.on("restart_game",(roomkey)=>{
-            const room = sessions[roomkey];
-            const players = Object.keys(room.players)
-            //console.log("playes left in session: ", players.length)
-            if(players.length === 0){
-            //console.log("restetsession")
-            room.backendProjectiles = {};
-            room.players =  {};
-            room.numready = 0;
-            room.ongoing = false;
-            }
-
+        socket.on("restart_game",(room)=>{
+          if (roomWorkers[room]) {
+                roomWorkers[room].postMessage({ type: 'input', action: 'restart_game' });
+        
+          }
         })
+    
         socket.on('keyup', (key, room) => {
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'keyup', socketId: socket.id, key });
@@ -165,8 +171,10 @@ async function startServer() {
 
 
 
+
             }  // Forward to worker if needed
         });
+
         const join = (username, room) => {
             console.log('JOIN EVENT:', { username, room });
             socket.rooms.forEach(r => {
@@ -175,6 +183,7 @@ async function startServer() {
                 }
             });
             socket.join(room);
+        
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'join', socketId: socket.id, username });
             } else {
@@ -186,24 +195,36 @@ async function startServer() {
         };
         socket.on('join', join);
         socket.on('update_sessions', update_sessios);
+       
         const ready = (room) => {
             socket.join(room);
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'ready', socketId: socket.id });
             }
         };
-        const room_leave = (room, p) => {
+
+        const room_leave = (room) => {
             socket.leave(room);
+            console.log("leave room ")
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'room_leave', socketId: socket.id });
+                socket.emit("leftroom", room)
+                io.emit('sessions', sessions);
             }
         };
+
         const delete_user = (room) => {
             socket.leave(room);
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'delete_user', socketId: socket.id });
+             
             }
         };
+
+      
+
+        
+
         socket.on('ready', ready);
         socket.on('room_leave', room_leave);
         socket.on('delete_user', delete_user);

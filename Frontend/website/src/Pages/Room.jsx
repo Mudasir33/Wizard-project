@@ -29,8 +29,7 @@ function pressed_ready(roomkey){
 
 function leaveroom(roomkey){
     console.log("leave room")
-    const player = user.getplayer()
-    socket.emit("room_leave", roomkey, player)
+    socket.emit("room_leave", roomkey)
      
 
 }

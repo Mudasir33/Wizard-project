@@ -27,7 +27,6 @@ export default function Game() {
  
   const button1IconRef = useRef(null);
   const startTimeRef = useRef(null);
-  const radiusRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
   const startedRef = false;
@@ -65,9 +64,8 @@ export default function Game() {
     const canvas = canvasRef.current;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    let ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    ctx.imageSmoothingQuality = 'low';
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
     
@@ -75,7 +73,7 @@ export default function Game() {
     var c = document.createElement("canvas");
     c.width = canvas.width;
     c.height = canvas.height;
-    let cctx = c.getContext("2d", { willReadFrequently: true });
+    const cctx = c.getContext("2d", { willReadFrequently: true });
 
     // Item sprite
     itemSpriteRef.current = new window.Image();
@@ -87,8 +85,7 @@ export default function Game() {
     const isMobile = window.innerWidth < 768;
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
-    //let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
-    let scaleup_constant = Math.max(1, Math.floor(canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE)))
+    let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
 
 
@@ -155,23 +152,12 @@ export default function Game() {
       canvas.style.width = `${vw}px`;
       canvas.style.height = `${vh}px`;
       
-      ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      ctx.imageSmoothingQuality = 'low';
-
-     
+      
       canvas.width = Math.floor(vw * scale);
       canvas.height = Math.floor(vh * scale);
-
-      cctx = c.getContext("2d", { willReadFrequently: true });
-      c.style.width = `${vw}px`;
-      c.style.height = `${vh}px`;
-      c.width = vw;    
-      c.height = vh;    
-      radiusRef.current = Math.hypot(vw, vh)*2 ;
-
       console.log("scala", canvas.height);
-      //ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
       layoutUI();
     }
     
@@ -202,10 +188,10 @@ export default function Game() {
 
 
     //zone radius and time
-    //let radius =  window.innerWidth  ;
-    let smallRadius = radiusRef.current;
-    const startRadius = radiusRef.current;
-    const duration = 120000;
+    let radius =   canvas.width*2 ;
+    let smallRadius = radius;
+    const startRadius = radius;
+    const duration = 60000;
     let startTime = startTimeRef.current;
 
     // Helper: get random walkable tile
@@ -278,10 +264,14 @@ export default function Game() {
     const playerInputs = playerInputsRef.current;
     let sequenceNumber = 0;
 
-    function OnupdatePlayer(backendPlayers, updateRoomKey) {
-      if (updateRoomKey && updateRoomKey !== roomkey) return;
+    function OnupdatePlayer(backendPlayers, room) {
+
+
       for (const id in backendPlayers) {
         const backendPlayer = backendPlayers[id];
+        //console.log(backendPlayer);
+
+
         if (!frontendPlayers[id]) {
           frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y);
         } else {
@@ -291,11 +281,16 @@ export default function Game() {
           frontendPlayers[id].alive = backendPlayer.alive;
           frontendPlayers[id].dx = backendPlayer.dx;
           frontendPlayers[id].dy = backendPlayer.dy;
+
+
           if (id === socket.id) {
+            // Update existing player position
             const lastBackendInputIndex = playerInputs.findIndex((input) => {
               return backendPlayer.sequenceNumber === input.sequenceNumber;
             });
+
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
+
             playerInputs.forEach((input) => {
               frontendPlayers[id].x += input.dx;
               frontendPlayers[id].y += input.dy;
@@ -303,13 +298,25 @@ export default function Game() {
           } else {
             frontendPlayers[id].x = backendPlayer.x;
             frontendPlayers[id].y = backendPlayer.y;
+            /*
+            gsap.to(frontendPlayers[id], {
+              x: backendPlayer.x,
+              y: backendPlayer.y,
+              duration: 0.015,
+              ease: 'linear'
+            }); */
           }
         }
+        
+
+        for (const id in frontendPlayers) {
+          if (!backendPlayers[id]) delete frontendPlayers[id];
+        }
+        // console.log(frontendPlayers);
       }
-      for (const id in frontendPlayers) {
-        if (!backendPlayers[id]) delete frontendPlayers[id];
-      }
+
     }
+
     socket.on("updatePlayers", OnupdatePlayer);
 
 
@@ -330,8 +337,8 @@ export default function Game() {
       const obj = object.objectLayers[0].obj; 
         const player_x =  player.x;
         const player_y = player.y;
-        const player_width =  16;
-        const player_height =  16;
+        const player_width =  11;
+        const player_height =  15;
         for (let j = 0; j < obj.objects.length; j++) {
             const wallX = obj.objects[j].x;  
 
@@ -354,10 +361,10 @@ export default function Game() {
     //##########Projectiles/spells##########################################################################################
 
     const frontEndProjectiles = frontEndProjectilesRef.current;
-    function OnupdateProjectiles(backendProjectiles, updateRoomKey) {
-      if (updateRoomKey && updateRoomKey !== roomkey) return;
+    function OnupdateProjectiles(backendProjectiles) {
       for (const id in backendProjectiles) {
         const backendProjectile = backendProjectiles[id];
+
         if (!frontEndProjectiles[id]) {
           frontEndProjectiles[id] = new Spell(
             backendProjectile.x,
@@ -582,33 +589,26 @@ export default function Game() {
       if (!isSpectatingRef.current && !frontendPlayers[socket.id]) return;
 
       try {
-        // Use CSS pixels for layout (canvas.width/height are device pixels)
-        const cssWidth = canvas.width / scale;
-        const cssHeight = canvas.height / scale;
-
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = "white";
-        // Ensure the drawing transform maps CSS pixels to device pixels
-        ctx.setTransform(scale, 0, 0, scale, 0, 0);
-        ctx.fillRect(-10, -10, cssWidth + 20, cssHeight + 20);
+        ctx.fillRect(-10, -10, canvas.width * scaleup_constant, canvas.height * scaleup_constant);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Center camera on player (CSS pixel coordinates)
-        const cameraOffsetX = cssWidth / 2;
-        const cameraOffsetY = cssHeight / 2;
+        // Center camera on player (same behavior on mobile and desktop)
+        const cameraOffsetX = canvas.width / 2;
+        const cameraOffsetY = canvas.height / 2;
 
         // Recompute scale dynamically to keep consistent view across resolutions
-        // Use CSS pixels (canvas.width is device pixels) to avoid double-scaling
-        scaleup_constant = Math.max(1, Math.floor((canvas.width / scale) / (DESIRED_TILES_ACROSS * TILE_SIZE)));
+        scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
 
         // If spectating (dead), center camera on map and show full map
         if (isSpectatingRef.current) {
           const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
           const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
-          // compute scale in CSS pixels and ensure at least 1 to avoid zero-scale
-          scaleup_constant = Math.max(1, Math.floor(Math.min(
-            (canvas.width / scale) / ((map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE),
-            (canvas.height / scale) / ((map.layers[0]?.grid?.length || 1) * TILE_SIZE)
-          )));
+          scaleup_constant = Math.min(
+            canvas.width / ((map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE),
+            canvas.height / ((map.layers[0]?.grid?.length || 1) * TILE_SIZE)
+          );
           ctx.translate(
             cameraOffsetX - mapCenterX * scaleup_constant,
             cameraOffsetY - mapCenterY * scaleup_constant
@@ -659,7 +659,7 @@ export default function Game() {
             }
           }
         }
-        
+        /*
         //set the overlay canvas for the zone 
         const zoneWorldX = (TILE_SIZE ) / 100;
         const zoneWorldY = (TILE_SIZE ) / 100;
@@ -670,6 +670,7 @@ export default function Game() {
         const circleY= (height * TILE_SIZE * scaleup_constant);
         const playerX = !isSpectatingRef.current ? (player.x * scaleup_constant) : 0;
         const playerY = !isSpectatingRef.current ? (player.y * scaleup_constant) : 0;
+        
         //set the time for the game play
         if (startTime === null) {
           startTime = timestamp;
@@ -691,7 +692,6 @@ export default function Game() {
           cctx.fillStyle = 'rgba(0,0,0,1)';
           cctx.beginPath();
           cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
-          //cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
           cctx.fill();   
           
         }
@@ -714,7 +714,7 @@ export default function Game() {
         }
 
       
-         
+          */
  
         // tiny red debug square on top (optional, you can remove this)
         //ctx.fillStyle = '#ff0000';
@@ -842,35 +842,12 @@ export default function Game() {
 
     //requestAnimationFrame(loop);// if it's inside the interval the game will get slower
 
-
-      /* TA EJ BORT FÖRSÖKER FIXA BÄTTRE SERVER 
-    let accumulator = 0;
-    const TICK_RATE = 30; // 30 ms per tick = ~33 ticks per second
-    const TICK_MS = 1000 / TICK_RATE;
-    let lastTimestamp = 0;
-    let currentTick = 0;
-
-    function render(timestamp) {
-      const deltaTime = timestamp - lastTimestamp;
-      lastTimestamp = timestamp;
-      accumulator += deltaTime;
-
-      while (accumulator >= TICK_MS) {
-        loop();
-        accumulator -= TICK_MS;
-        currentTick++;
-      }
-
-      requestAnimationFrame(render);
-    }*/
-    
-      
     setInterval(() => {
       requestAnimationFrame(loop);
       
       // console.log("inputs:", playerInputs);
     }, 15);
-    
+
 
 
   
@@ -930,7 +907,7 @@ export default function Game() {
     socket.on("winner", winner)
 
 
-//requestAnimationFrame(render);
+
 
     return () => {
       socket.off('map', mapOn);
@@ -943,12 +920,12 @@ export default function Game() {
     };
   }, [])
 
-  
+
 
   return (
     <div >
       <canvas className="gamecanvas" ref={canvasRef}></canvas>
-      {showdeath && !isSpectating &&(
+       {showdeath && !isSpectating &&(
         <Game_death placement= {playercount} won ={won} onSpectate={() => setIsSpectating(true)}></Game_death>
       )}
     </div>

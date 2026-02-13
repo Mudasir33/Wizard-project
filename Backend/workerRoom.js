@@ -9,6 +9,7 @@ let items = initialState.items ? JSON.parse(JSON.stringify(initialState.items)) 
 let map = initialState.map ? JSON.parse(JSON.stringify(initialState.map)) : null;
 let numready = initialState.numready || 0;
 let ongoing = initialState.ongoing || false;
+
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 let spawn_x = 50;
 let spawn_y = 125;
@@ -55,6 +56,26 @@ function handleInput(msg) {
             parentPort.postMessage({ type: 'joined', socketId: msg.socketId, room: roomName });
             break;
         }
+
+        case 'restart_game': {
+            if(Object.keys(players).length === 0){
+            console.log("restart game", Object.keys(players).length )
+
+            playerInput = {}
+            backendProjectiles = {};
+            map = null;
+            ongoing = false;
+            numready = 0;
+            items = [];
+            }
+          
+            break;
+        }
+
+
+
+
+
         case 'ready': {
             if (players[msg.socketId]) {
                 if (players[msg.socketId].ready == false) {
@@ -119,20 +140,25 @@ function handleInput(msg) {
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
+            
             }
             break;
         }
         case 'delete_user': {
+            
             if (players[msg.socketId]) {
+                console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
+              
             }
             break;
         }
         default:
             break;
     }
+    
     parentPort.postMessage({ type: 'update', state: {
         id: roomName,
         players,
@@ -144,6 +170,10 @@ function handleInput(msg) {
         ongoing
     }});
 }
+
+
+
+
 
 function gameloop() {
     // Defensive: Only run if map is set and valid
