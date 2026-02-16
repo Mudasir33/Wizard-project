@@ -12,6 +12,8 @@ let ongoing = initialState.ongoing || false;
 
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 let spawn_x = 50;
+
+const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 
@@ -50,6 +52,7 @@ function handleInput(msg) {
                 sequenceNumber: 0,
                 dx: 0,
                 dy: 0,
+                lastSpellCast: 0,
             };
             spawn_x += 30;
             playerInput[msg.socketId] = { dx: 0, dy: 0 };
@@ -71,10 +74,6 @@ function handleInput(msg) {
           
             break;
         }
-
-
-
-
 
         case 'ready': {
             if (players[msg.socketId]) {
@@ -116,7 +115,13 @@ function handleInput(msg) {
             break;
         }
         case 'spellCast': {
-            if (!players[msg.socketId] || players[msg.socketId].alive === false) return;
+            const player = players[msg.socketId];
+            if (!player || player.alive === false) return;
+            const now = Date.now();
+            if (now - (player.lastSpellCast || 0) < spell_cd) {
+                return;
+            }
+            player.lastSpellCast = now;
             projectileId += 1;
             backendProjectiles[projectileId] = {
                 spellName: msg.spellName,
@@ -292,7 +297,7 @@ setInterval(() => {
         }});
         lastState = { ...currentState };
     }
-}, 30);
+}, 150);
 
 parentPort.on('message', (msg) => {
     if (msg.type === 'input') {
