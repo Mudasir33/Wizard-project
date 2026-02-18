@@ -812,10 +812,10 @@ export default function Game() {
           ctx.textAlign = 'left';
           ctx.fillText('SPECTATING', 20, 40);
           
-          // Draw exit spectator button
+          // Draw exit spectator button (-20 padding)
           const buttonWidth = 150;
           const buttonHeight = 50;
-          const buttonX = canvas.width - buttonWidth - 20;
+          const buttonX = (canvas.width / scale) - buttonWidth - 20;
           const buttonY = 20;
           
           ctx.fillStyle = 'rgb(0, 0, 0)';
@@ -824,7 +824,7 @@ export default function Game() {
           ctx.lineWidth = 2;
           ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
           
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = '#ffffff';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('Home', buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
@@ -868,7 +868,7 @@ export default function Game() {
       if (isSpectatingRef.current && canvasRef.current.exitSpectateButton) {
         const button = canvasRef.current.exitSpectateButton;
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const x = e.clientX - rect.left;  //scaled
         const y = e.clientY - rect.top;
         
         if (x >= button.x && x <= button.x + button.width && 
@@ -880,7 +880,7 @@ export default function Game() {
       }
     };
     
-    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('pointerdown', handleCanvasClick);
 
     const death = (data)=>{
        console.log("you died")
