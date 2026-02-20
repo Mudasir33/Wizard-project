@@ -301,20 +301,28 @@ export default function Game() {
 
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
 
+            // Replay inputs with wall sliding collision
+            const obj = map;
             playerInputs.forEach((input) => {
-              frontendPlayers[id].x += input.dx;
-              frontendPlayers[id].y += input.dy;
+              const player = frontendPlayers[id];
+              
+              // Try X movement
+              const oldX = player.x;
+              player.x += input.dx;
+              if (obj && wallCollison(obj, player)) {
+                player.x = oldX;
+              }
+              
+              // Try Y movement
+              const oldY = player.y;
+              player.y += input.dy;
+              if (obj && wallCollison(obj, player)) {
+                player.y = oldY;
+              }
             });
           } else {
             frontendPlayers[id].x = backendPlayer.x;
             frontendPlayers[id].y = backendPlayer.y;
-            /*
-            gsap.to(frontendPlayers[id], {
-              x: backendPlayer.x,
-              y: backendPlayer.y,
-              duration: 0.015,
-              ease: 'linear'
-            }); */
           }
         }
         
@@ -383,36 +391,32 @@ export default function Game() {
     //##########Projectiles/spells##########################################################################################
 
     const frontEndProjectiles = frontEndProjectilesRef.current;
-    function OnupdateProjectiles(backendProjectiles) {
-      for (const id in backendProjectiles) {
-        const backendProjectile = backendProjectiles[id];
-
-        if (!frontEndProjectiles[id]) {
-          frontEndProjectiles[id] = new Spell(
-            backendProjectile.x,
-            backendProjectile.y,
-            spell_list[backendProjectile.spellName],
-            backendProjectile.spellDirection
-          );
-          // Store spell name for explosion check
-          frontEndProjectiles[id].spellName = backendProjectile.spellName;
-        } else {
-          frontEndProjectiles[id].x = backendProjectile.x;
-          frontEndProjectiles[id].y = backendProjectile.y;
-        }
-      }
-      for (const id in frontEndProjectiles) {
-        if (!backendProjectiles[id]) {
-          // Spawn explosion if it was a fireball
-          const proj = frontEndProjectiles[id];
-          if (proj.spellName === 'fireball') {
-            explosionManagerRef.current.spawn(proj.x, proj.y);
-          }
-          delete frontEndProjectiles[id];
-        }
+    
+    // Handle new projectile spawned (only receive spawn data, calculate movement locally)
+    function OnProjectileSpawned(projectileId, projectile) {
+      if (!frontEndProjectiles[projectileId]) {
+        frontEndProjectiles[projectileId] = new Spell(
+          projectile.x,
+          projectile.y,
+          spell_list[projectile.spellName],
+          projectile.spellDirection
+        );
+        frontEndProjectiles[projectileId].spellName = projectile.spellName;
       }
     }
-    socket.on('updateProjectiles', OnupdateProjectiles);
+    socket.on('projectileSpawned', OnProjectileSpawned);
+    
+    // Handle projectile deleted (hit wall/player)
+    function OnProjectileDeleted(projectileId, x, y, spellName) {
+      if (frontEndProjectiles[projectileId]) {
+        // Spawn explosion at server-reported position if fireball
+        if (spellName === 'fireball') {
+          explosionManagerRef.current.spawn(x, y);
+        }
+        delete frontEndProjectiles[projectileId];
+      }
+    }
+    socket.on('projectileDeleted', OnProjectileDeleted);
 
     //####SPELLS#############################################################################################
     let direction = {
@@ -507,10 +511,8 @@ export default function Game() {
         dy *= inv;
       }
       const obj = map;
-      // Update player position
+      // Update player position with wall sliding (match server logic)
       if (frontendPlayers[socket.id]) {
-        //if statement om x och y 
-        
         const player = frontendPlayers[socket.id];
         const speed = player.speed;
         player.x += dx * speed * 0.015;
@@ -718,8 +720,10 @@ export default function Game() {
           player.draw(ctx, scaleup_constant);
         }
 
+        // Update projectiles locally (position calculated client-side)
         for (const id in frontEndProjectiles) {
           const projectile = frontEndProjectiles[id];
+          projectile.update(deltaTime);
           projectile.draw(ctx, scaleup_constant);
         }
 
@@ -870,7 +874,8 @@ export default function Game() {
 
     return () => {
       socket.off('map', mapOn);
-      socket.off('updateProjectiles', OnupdateProjectiles);
+      socket.off('projectileSpawned', OnProjectileSpawned);
+      socket.off('projectileDeleted', OnProjectileDeleted);
       socket.off("updatePlayers", OnupdatePlayer);
       socket.off("spectatorList");
       socket.off("death",death)

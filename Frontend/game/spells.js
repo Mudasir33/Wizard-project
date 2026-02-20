@@ -24,16 +24,15 @@ export class Spell {
         this.sprite.loaded = false;
         this.sprite.onload = () => {
             this.sprite.loaded = true;
-            console.log("Spell image loaded:", type.texture);
         };
         this.sprite.onerror = (err) => {
             console.error("Failed to load spell image:", type.texture, err);
         };
-        console.log("Spell constructor - x:", x, "y:", y, "dx:", this.dx, "dy:", this.dy, "speed:", this.speed);
     }
-    update() {
-        this.x += this.dx * this.speed;
-        this.y += this.dy * this.speed;
+    update(deltaTime) {
+        // Match backend: speed units per second
+        this.x += this.dx * this.speed * deltaTime;
+        this.y += this.dy * this.speed * deltaTime;
     }
     draw(context, scaleup_constant) {
         if (!this.sprite.loaded) {
@@ -43,7 +42,7 @@ export class Spell {
             const angle = Math.atan2(this.dy, this.dx);
             const drawX = this.x * scaleup_constant;
             const drawY = this.y * scaleup_constant;
-            const size = this.size;
+            const size = this.size * scaleup_constant;  // Scale size like player characters
             context.save();
             context.translate(drawX + size / 2, drawY + size / 2);
             context.rotate(angle);
@@ -64,15 +63,15 @@ export class Spell {
 export const spell_list = {
     fireball: {
         texture: fire,
-        speed: 4,
+        speed: 200,  // Match backend speed (units per second)
         damage: 25,
-        size: 40,
+        size: 18,
         aoeRadius: 50
     },
     magic_missile: {
         texture: missile,
-        speed: 2,
+        speed: 100,  // Match backend speed (units per second)
         damage: 12,
-        size: 40
+        size: 12
     }
 };
