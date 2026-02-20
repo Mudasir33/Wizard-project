@@ -91,12 +91,24 @@ div[name ="main"]{
   
 }
 
+button[name="spectate"]{
+  margin: 5px;
+}
+
+h2[name= "SpectateSessions"]{
+
+  text-align: center;
+  color:White;
+  font-size: 200%;
+  margin-bottom: 0%;
+ 
+}
+
 h2[name= "sessions"]{
 
   text-align: center;
   color:White;
   font-size: 200%;
-
  
 }
 

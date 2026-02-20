@@ -36,9 +36,8 @@ export default function menu() {
       <div id="menuContainer">
         <div id="buttons">
           <div> <button name="menu"  onClick={() => nav("/sessions")}>Join Lobby</button> </div>
-          <div><button name="menu"  >Spectate</button></div>
+          <div><button name="menu"  onClick={() => nav("/SpectateSession")}>Spectate</button></div>
           <div><button name="menu"  >Customize</button></div>
-
           <div><button name="menu" onClick={()=> setGuide(true)} >Guide</button></div>
          
          

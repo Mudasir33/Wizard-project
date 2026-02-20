@@ -48,6 +48,8 @@ export default function Game() {
 
   const [showdeath, setdeath] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
+  const [isJoinedAsSpectator] = useState(false);
+  const spectatorListRef = useRef({});
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -281,12 +283,24 @@ export default function Game() {
         for (const id in frontendPlayers) {
           if (!backendPlayers[id]) delete frontendPlayers[id];
         }
+        // Auto-enable spectate mode if user is a spectator (not a player and in spectator list)
+        if (!backendPlayers[socket.id] && spectatorListRef.current[socket.id] && !isSpectatingRef.current) {
+          setIsSpectating(true);
+        }
         // console.log(frontendPlayers);
       }
 
     }
 
     socket.on("updatePlayers", OnupdatePlayer);
+    
+    socket.on("spectatorList", (spectators) => {
+      spectatorListRef.current = spectators;
+      // Enable spectate if this user is in the spectator list
+      if (spectators[socket.id] && !isSpectatingRef.current) {
+        setIsSpectating(true);
+      }
+    });
 
 
     const keys = keysRef.current;
@@ -745,6 +759,7 @@ export default function Game() {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
+      socket.off("spectatorList");
       socket.off("death",death)
       socket.off("winner", winner)
       clearInterval(itemSpawnInterval);

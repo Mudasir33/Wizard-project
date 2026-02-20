@@ -50,6 +50,7 @@ function startRoomWorker(roomName, initialState) {
             let ongoing_change = ( sessions[roomName].ongoing !== msg.state.ongoing )
             sessions[roomName].ongoing = msg.state.ongoing;
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
+            io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
             io.to(roomName).emit('updateProjectiles', clonedBackendProjectiles, roomName);
             io.to(roomName).emit('spawnItems', clonedItems, roomName);
             
@@ -88,7 +89,7 @@ function startRoomWorker(roomName, initialState) {
 }
 
 ['Room 1', 'Room 2', 'Room 3', 'Room 4', 'Room 5'].forEach(room => {
-    const initialState = { id: room, players: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0, items: [] };
+    const initialState = { id: room, players: {}, spectators: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0, items: [] };
     sessions[room] = initialState;
     startRoomWorker(room, initialState);
 });
@@ -113,7 +114,8 @@ async function startServer() {
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'set_map', map: JSON.parse(JSON.stringify(clonedMap.objectLayers[0])) });
             }
-            socket.emit('gameRoom', room);
+            // Send gameRoom to all players and spectators in the room
+            io.to(room).emit('gameRoom', room);
         });
         socket.on('gameStart', (room) => {
             io.to(room).emit('map', Map2d);
@@ -175,6 +177,7 @@ async function startServer() {
             }  // Forward to worker if needed
         });
 
+
         const join = (username, room) => {
             console.log('JOIN EVENT:', { username, room });
             socket.rooms.forEach(r => {
@@ -193,7 +196,32 @@ async function startServer() {
         const update_sessios = () => {
             socket.emit('sessions', sessions);
         };
+        const joinSpectator = (room) => {
+            console.log('SPECTATOR JOIN EVENT:', { room });
+            if (!room || !sessions[room]) {
+                socket.emit('joinerror', 'Invalid room');
+                return;
+            }
+            socket.rooms.forEach(r => {
+                if (r !== socket.id && r !== room) {
+                    socket.leave(r);
+                }
+            });
+            socket.join(room);
+            
+            // Add to spectators list
+            if (!sessions[room].spectators) {
+                sessions[room].spectators = {};
+            }
+            sessions[room].spectators[socket.id] = { socketId: socket.id };
+            
+            console.log('Spectator joined room:', room, 'Total spectators:', Object.keys(sessions[room].spectators).length);
+            socket.emit('joined', room);
+            io.emit('sessions', sessions);
+        };
+
         socket.on('join', join);
+        socket.on('joinSpectator', joinSpectator);
         socket.on('update_sessions', update_sessios);
        
         const ready = (room) => {
@@ -206,6 +234,13 @@ async function startServer() {
         const room_leave = (room) => {
             socket.leave(room);
             console.log("leave room ")
+            
+            // Remove from spectators if they're a spectator
+            if (sessions[room] && sessions[room].spectators && sessions[room].spectators[socket.id]) {
+                delete sessions[room].spectators[socket.id];
+                console.log("Spectator left room");
+            }
+            
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'room_leave', socketId: socket.id });
                 socket.emit("leftroom", room)
