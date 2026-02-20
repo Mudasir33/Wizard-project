@@ -1,16 +1,14 @@
 import fireballExplosionGif from "../../Assets/Spells/fireball_explosion.gif";
 
-// Explosion effect class using DOM img element for proper GIF animation
 export class Explosion {
     constructor(x, y, duration = 2.4) {
         this.x = x;
         this.y = y;
         this.duration = duration;
         this.elapsed = 0;
-        this.size = 200; // Display size in world units
+        this.worldSize = 50;
         this.active = true;
-        
-        // Create DOM element for GIF animation
+
         this.element = document.createElement('img');
         this.element.src = fireballExplosionGif + '?t=' + Date.now();
         this.element.style.position = 'absolute';
@@ -20,7 +18,7 @@ export class Explosion {
         document.body.appendChild(this.element);
     }
 
-    update(deltaTime, canvas, playerX, playerY, scaleup_constant) {
+    update(deltaTime, canvas, cameraFocusX, cameraFocusY, scaleup_constant) {
         this.elapsed += deltaTime;
         if (this.elapsed >= this.duration) {
             this.active = false;
@@ -30,20 +28,16 @@ export class Explosion {
             return;
         }
 
-        // Convert world position to screen position
         if (canvas && this.element) {
             const canvasRect = canvas.getBoundingClientRect();
             const cameraOffsetX = canvas.width / 2;
             const cameraOffsetY = canvas.height / 2;
             
-            // Calculate screen position relative to player (camera center)
-            const screenX = cameraOffsetX + (this.x - playerX) * scaleup_constant;
-            const screenY = cameraOffsetY + (this.y - playerY) * scaleup_constant;
+            const screenX = cameraOffsetX + (this.x - cameraFocusX) * scaleup_constant;
+            const screenY = cameraOffsetY + (this.y - cameraFocusY) * scaleup_constant;
             
-            // Get actual pixel size on screen
-            const displaySize = this.size;
-            
-            // Account for devicePixelRatio
+            const displaySize = this.worldSize * scaleup_constant;
+
             const scale = window.devicePixelRatio || 1;
             const cssX = (screenX / scale) - (displaySize / 2);
             const cssY = (screenY / scale) - (displaySize / 2);
@@ -62,7 +56,6 @@ export class Explosion {
     }
 }
 
-// Manager class to handle multiple explosions
 export class ExplosionManager {
     constructor() {
         this.explosions = [];
@@ -81,9 +74,8 @@ export class ExplosionManager {
         }
     }
 
-    // draw() is no longer needed since we use DOM elements
     draw(ctx, scaleup_constant) {
-        // Kept for compatibility but does nothing now
+        // Comp
     }
 
     clear() {

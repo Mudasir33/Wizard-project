@@ -66,11 +66,11 @@ export class Spell {
 
 export const spell_list = {
     fireball: {
-        
         texture: fire,
-        speed: 2,
-        damage: 12,
-        size: 40
+        speed: 4,
+        damage: 25,
+        size: 40,
+        aoeRadius: 50
     },
     magic_missile: {
         texture: missile,

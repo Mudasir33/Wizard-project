@@ -123,6 +123,14 @@ function handleInput(msg) {
             }
             player.lastSpellCast = now;
             projectileId += 1;
+            
+            // Spell stats defined server-side
+            const spellStats = {
+                fireball: { speed: 200, damage: 25, aoeRadius: 50 },
+                magic_missile: { speed: 100, damage: 12, aoeRadius: 0 }
+            };
+            const stats = spellStats[msg.spellName] || spellStats.magic_missile;
+            
             backendProjectiles[projectileId] = {
                 spellName: msg.spellName,
                 spellDirection: msg.spellDirection,
@@ -130,7 +138,9 @@ function handleInput(msg) {
                 y: msg.y,
                 roomkey: roomName,
                 playerId: msg.socketId,
-                speed: 100
+                speed: stats.speed,
+                damage: stats.damage,
+                aoeRadius: stats.aoeRadius
             };
             break;
         }
@@ -175,9 +185,6 @@ function handleInput(msg) {
         ongoing
     }});
 }
-
-
-
 
 
 function gameloop() {
@@ -231,27 +238,54 @@ function gameloop() {
         let dy = direction.y;
         projectile.x += dx * projectile.speed * 0.015;
         projectile.y += dy * projectile.speed * 0.015;
+        
+        let projectileHit = false;
+        
         if (wallCollison({ objectLayers: [map] }, projectile)) {
-            delete backendProjectiles[id];
-            continue;
+            projectileHit = true;
         }
+        
+        // Check direct hit on players
         for (const pid in players) {
             if (ProjectilePlayerCollision(projectile, players[pid])) {
                 if (pid === projectile.playerId || players[pid].alive === false) break;
-                players[pid].health -= 10;
-                delete backendProjectiles[id];
-                if (players[pid].health <= 0 && players[pid].alive === true) {
-                    players[pid].alive = false;
-                    const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-                    parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
-                    if (aliveplayers.length === 1) {
-                        const winner = aliveplayers[0];
-                        players[winner].alive = false;
-                        parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
-                    }
-                }
+                projectileHit = true;
                 break;
             }
+        }
+
+        if (projectileHit) {
+            const aoeRadius = projectile.aoeRadius || 0;
+            const damage = projectile.damage || 10;
+            
+            for (const pid in players) {
+                if (pid === projectile.playerId || players[pid].alive === false) continue;
+                
+                const player = players[pid];
+                const distX = player.x - projectile.x;
+                const distY = player.y - projectile.y;
+                const distance = Math.sqrt(distX * distX + distY * distY);
+
+                if (distance <= aoeRadius || ProjectilePlayerCollision(projectile, player)) {
+                    const damageMult = aoeRadius > 0 ? Math.max(0.5, 1 - (distance / aoeRadius) * 0.5) : 1;
+                    const finalDamage = Math.round(damage * damageMult);
+                    
+                    players[pid].health -= finalDamage;
+                    
+                    if (players[pid].health <= 0 && players[pid].alive === true) {
+                        players[pid].alive = false;
+                        const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                        parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
+                        if (aliveplayers.length === 1) {
+                            const winner = aliveplayers[0];
+                            players[winner].alive = false;
+                            parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                        }
+                    }
+                }
+            }
+            delete backendProjectiles[id];
+            continue;
         }
     }
 }

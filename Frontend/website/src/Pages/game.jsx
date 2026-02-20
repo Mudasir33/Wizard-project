@@ -89,10 +89,6 @@ export default function Game() {
     itemSpriteRef.current = new window.Image();
     itemSpriteRef.current.src = fireballPickup;
 
-   
-
-
-
     let map = null;
     let grid = null;
 
@@ -259,15 +255,12 @@ export default function Game() {
         image_pickup: create_image(utility_pickup.texture)
       });
 
-
-
-
     }
     const itemSpawnInterval = setInterval(() => {
       if (map) {
         spawnItem();
       }
-    }, 1000);
+    }, 10000);
 
     function mapOn(loadmap) {
       map = loadmap;
@@ -701,11 +694,20 @@ export default function Game() {
           projectile.draw(ctx, scaleup_constant);
         }
 
-        // Update and draw explosions (pass canvas, player position for screen positioning)
-        const currentPlayer = frontendPlayers[socket.id];
-        const playerX = currentPlayer?.x || 0;
-        const playerY = currentPlayer?.y || 0;
-        explosionManagerRef.current.update(deltaTime, canvas, playerX, playerY, scaleup_constant);
+        // Update and draw explosions (pass canvas, camera focus position for screen positioning)
+        let cameraFocusX, cameraFocusY;
+        if (isSpectatingRef.current) {
+          // When spectating, camera is centered on map
+          const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
+          const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
+          cameraFocusX = mapCenterX;
+          cameraFocusY = mapCenterY;
+        } else {
+          const currentPlayer = frontendPlayers[socket.id];
+          cameraFocusX = currentPlayer?.x || 0;
+          cameraFocusY = currentPlayer?.y || 0;
+        }
+        explosionManagerRef.current.update(deltaTime, canvas, cameraFocusX, cameraFocusY, scaleup_constant);
 
         // Draw items if active, scale to wizard size (11x15)
         itemRef.current.forEach(item => {
