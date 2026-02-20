@@ -5,6 +5,7 @@ import { Player } from "../../../game/Player.js";
 import { Joystick } from "../../../game/joystick.js";
 import { Button } from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
+import { ExplosionManager } from "../../../game/spell_effects.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
 import haste_potion from "../assets/potion.png";
@@ -38,6 +39,7 @@ export default function Game() {
   const keysRef = useRef({});
   const playerInputsRef = useRef([]);
   const frontEndProjectilesRef = useRef({})
+  const explosionManagerRef = useRef(new ExplosionManager());
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
@@ -397,13 +399,22 @@ export default function Game() {
             spell_list[backendProjectile.spellName],
             backendProjectile.spellDirection
           );
+          // Store spell name for explosion check
+          frontEndProjectiles[id].spellName = backendProjectile.spellName;
         } else {
           frontEndProjectiles[id].x = backendProjectile.x;
           frontEndProjectiles[id].y = backendProjectile.y;
         }
       }
       for (const id in frontEndProjectiles) {
-        if (!backendProjectiles[id]) delete frontEndProjectiles[id];
+        if (!backendProjectiles[id]) {
+          // Spawn explosion if it was a fireball
+          const proj = frontEndProjectiles[id];
+          if (proj.spellName === 'fireball') {
+            explosionManagerRef.current.spawn(proj.x, proj.y);
+          }
+          delete frontEndProjectiles[id];
+        }
       }
     }
     socket.on('updateProjectiles', OnupdateProjectiles);
@@ -690,6 +701,12 @@ export default function Game() {
           projectile.draw(ctx, scaleup_constant);
         }
 
+        // Update and draw explosions (pass canvas, player position for screen positioning)
+        const currentPlayer = frontendPlayers[socket.id];
+        const playerX = currentPlayer?.x || 0;
+        const playerY = currentPlayer?.y || 0;
+        explosionManagerRef.current.update(deltaTime, canvas, playerX, playerY, scaleup_constant);
+
         // Draw items if active, scale to wizard size (11x15)
         itemRef.current.forEach(item => {
           if (item.active && item.image && item.image.complete) {
@@ -829,6 +846,7 @@ export default function Game() {
       socket.off("winner", winner)
       clearInterval(itemSpawnInterval);
       canvas.removeEventListener('click', handleCanvasClick);
+      explosionManagerRef.current.clear(); // Clean up DOM elements
     };
   }, [])
 
