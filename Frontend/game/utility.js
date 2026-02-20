@@ -1,3 +1,7 @@
+
+import yellow_potion from "./../website/src/assets/potion.png"
+
+
 export class Utility {
     constructor(player, type) {
         this.player = player;
@@ -42,6 +46,7 @@ export const utility_list = {
         name: "haste",
         duration: 10000,
         amount: 2,
-        instant: false
+        instant: false,
+        texture: yellow_potion
     }
 };

@@ -7,8 +7,12 @@ import { Button } from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
+import haste_potion from "../assets/potion.png";
 import { Socket } from "socket.io-client";
 import Game_death from "./Game_Death.jsx";
+import { Utility, utility_list } from "../../../game/utility.js";
+import { use } from "react";
+
 
 export default function Game() {
   //should help with 
@@ -26,6 +30,7 @@ export default function Game() {
   const equippedSpellRef = useRef(null);
  
   const button1IconRef = useRef(null);
+  const button3IconRef = useRef(null)
   const startTimeRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
@@ -36,6 +41,7 @@ export default function Game() {
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
+
 
 
   const joystickRef = useRef(null);
@@ -78,6 +84,10 @@ export default function Game() {
     // Item sprite
     itemSpriteRef.current = new window.Image();
     itemSpriteRef.current.src = fireballPickup;
+
+   
+
+
 
     let map = null;
     let grid = null;
@@ -221,23 +231,55 @@ export default function Game() {
       const texture = spell_list[key].texture;
       return { key, texture };
     }
+
+     function getRandomUtilityPickup() {
+      const keys = Object.keys(utility_list)
+      const key = keys[Math.floor(Math.random() * keys.length)] || "haste";
+      const texture = utility_list[key].texture;
+      return { key, texture };
+    }
+
+    function create_image(src){
+        const img = new Image();
+        img.src = src;
+        return img;
+    }
+
     function spawnItem() {
       if (!map) return;
       const pos = getRandomWalkableTile();
+      const pos1 = getRandomWalkableTile();
       const pickup = getRandomSpellPickup();
+      const utility_pickup = getRandomUtilityPickup();
       itemRef.current.push({
         x: pos.x * TILE_SIZE + TILE_SIZE / 2,
         y: pos.y * TILE_SIZE + TILE_SIZE / 2,
         active: true,
-        spellKey: pickup.key,
-        spellTexture: pickup.texture
+        type: "spell",
+        Key: pickup.key,
+        image: create_image(pickup.texture),
+        image_pickup:create_image(fireballPickup)
       });
+
+       itemRef.current.push({
+        x: pos1.x * TILE_SIZE + TILE_SIZE / 2,
+        y: pos1.y * TILE_SIZE + TILE_SIZE / 2,
+        active: true,
+        type: "utility",
+        key: utility_pickup.key,
+        image: create_image(utility_pickup.texture),
+        image_pickup: create_image(utility_pickup.texture)
+      });
+
+
+
+
     }
     const itemSpawnInterval = setInterval(() => {
       if (map) {
         spawnItem();
       }
-    }, 10000);
+    }, 1000);
 
 
 
@@ -446,10 +488,18 @@ export default function Game() {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < 15) {
                   // Set button 1 icon to this spell
-                  const img = new window.Image();
-                  img.src = item.spellTexture;
-                  button1IconRef.current = { key: item.spellKey, image: img };
-                  itemRef.current.splice(i, 1); // Remove item
+                  if(item.type === "spell"){
+                  
+                  button1IconRef.current = { key: item.Key, image: item.image_pickup };
+          
+                  }
+                  if(item.type ==="utility"){
+                     
+                      button3IconRef.current = { key: item.Key, image: item.image_pickup };
+             
+
+                  }
+                    itemRef.current.splice(i, 1);
                 }
               }
             }
@@ -580,6 +630,19 @@ export default function Game() {
         console.log("Equipped spell:", equippedSpellRef.current);
       }
     }
+
+     function Utiliy(button) {
+      // Button 4: equip spell_list
+      if (button === 3 && button3IconRef.current) {
+        equippedSpellRef.current = button1IconRef.current.key;
+        console.log("Equipped spell:", equippedSpellRef.current);
+      }
+    }
+
+
+
+
+
     //####MAIN GAME LOOP#############################################################################################
     let lastTime = 0;
     function loop(timestamp) {
@@ -740,10 +803,11 @@ export default function Game() {
 
         // Draw items if active, scale to wizard size (11x15)
         itemRef.current.forEach(item => {
-          if (item.active && itemSpriteRef.current.complete) {
+          if (item.active && item.image && item.image.complete) {
             ctx.save();
+           
             ctx.drawImage(
-              itemSpriteRef.current,
+              item.image_pickup,
               (item.x - 11 / 2) * scaleup_constant,
               (item.y - 15 / 2) * scaleup_constant,
               11 * scaleup_constant,

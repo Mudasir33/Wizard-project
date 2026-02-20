@@ -35,6 +35,11 @@ export function drawItems(ctx, scale) {
             img.src = spell_list.fireball.texture;
             ctx.drawImage(img, item.x * scale, item.y * scale, 32, 32);
         }
+        if(item.type === "haste"){
+            const img = new window.Image()
+            img.src = utility_list.haste.texture
+             ctx.drawImage(img, item.x * scale, item.y * scale, 32, 32);
+        }
     }
 }
 
