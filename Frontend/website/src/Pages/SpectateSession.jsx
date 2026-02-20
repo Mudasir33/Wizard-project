@@ -8,13 +8,10 @@ import { socket } from "../../../game/Socket";
 
 function joinroom(room){
     console.log("CLIENT: TRY TO JOIN ", room)
-    let username = document.getElementById("username").value;
+    console.log("Room ID:", room?.id)
    
 
-
-    socket.emit("join", username, room );
-
-    //console.log("username: ",username);
+    socket.emit("joinSpectator", room?.id );
 
 }
 
@@ -40,41 +37,39 @@ export default function Session() {
     useEffect(()=> {
         socket.emit("update_sessions", null)
         
-        const sessions = (data) =>{
-                console.log("Session: sessions received")
+        const onSessions = (data) =>{
+                console.log("Session: sessions received", data)
                 setSessions(data);}
 
-        const joined = (room)=>{
-             nav("/room", {state: room})};
+        const onJoined = (room)=>{
+             console.log("Spectator joined event received, room:", room)
+             nav("/spectator-room", {state: room})};
 
-        const joinerror = (msg)=>{
-            console.log("CLIENT: JOINERROR")
+        const onJoinerror = (msg)=>{
+            console.log("CLIENT: JOINERROR:", msg)
             alert(msg);}
         
-        socket.on("sessions", sessions);
-        socket.on("joined", joined);
-        socket.on("joinerror", joinerror)
+        socket.on("sessions", onSessions);
+        socket.on("joined", onJoined);
+        socket.on("joinerror", onJoinerror)
 
 
 
 
      return () => {
-        socket.off("sessions", sessions);
-        socket.off("joined", joined);
-        socket.off("joinerror", joinerror)
+        socket.off("sessions", onSessions);
+        socket.off("joined", onJoined);
+        socket.off("joinerror", onJoinerror)
     };
        
-    }, [])
+    }, [nav])
 
 
     
 
 return(
 <div name="main">
-    <h2 name= "sessions">Session</h2>
-
-<label name = "sessions" htmlFor="username">Username: </label>
-<input name = "username" type="text" id="username" placeholder="Enter Username"></input>
+    <h2 name= "SpectateSessions">Spectate Sessions</h2>
 <br></br>
     <table>
         <thead>
@@ -93,7 +88,7 @@ return(
                 <td>{room.id}</td>
                 <td>{Object.keys(room.players).length}</td>
                 <td>{ongoing(room)}</td>
-                <td><button  name = "sessions" onClick={() => joinroom(room.id) } >JOIN</button></td>
+                <td><button  name = "sessions" onClick={() => joinroom(room) } >JOIN</button></td>
                 </tr>
             ))}
         </tbody>

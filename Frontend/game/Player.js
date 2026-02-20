@@ -1,11 +1,19 @@
+import Character_animation_sheet_blue from "../../Assets/character/SpritesheetWalkingCombinedBlue.png";
+import Character_animation_sheet_black from "../../Assets/character/SpritesheetWalkingCombinedBlack.png";
+import Character_animation_sheet_brown from "../../Assets/character/SpritesheetWalkingCombinedBrown.png";
+import Character_animation_sheet_gray from "../../Assets/character/SpritesheetWalkingCombinedGray.png";
+import Character_animation_sheet_green from "../../Assets/character/SpritesheetWalkingCombinedGreen.png";
+import Character_animation_sheet_pink from "../../Assets/character/SpritesheetWalkingCombinedPink.png";
+import Character_animation_sheet_purple from "../../Assets/character/SpritesheetWalkingCombinedPurple.png";
+import Character_animation_sheet_red from "../../Assets/character/SpritesheetWalkingCombinedRed.png";
+import Character_animation_sheet_white from "../../Assets/character/SpritesheetWalkingCombinedWhite.png";
+import Character_animation_sheet_yellow from "../../Assets/character/SpritesheetWalkingCombinedYellow.png";
 
-
-import Character_animation_sheet from "../../Assets/character/SpritesheetWalkingCombined.png";
 
 export class Player {
-  constructor(x, y) {
+  constructor(x, y, color) {
     this.username = '';
-    this.color = '';
+    this.color = color;
     this.ready = false;
 
     this.x = x;
@@ -14,7 +22,7 @@ export class Player {
     this.maxHealth = 100;
     this.alive = true;
     this.image = new Image();
-    this.image.src = Character_animation_sheet;
+    this.image.src =  this.setImage(color);
     this.speed = 100;
     this.dx = 0;
     this.dy = 0;
@@ -37,6 +45,32 @@ export class Player {
     this.image.onload = () => {
       this.imageLoaded = true;
     };
+  }
+
+  setImage(color) {
+    console.log("Setting image for color:", color);
+    switch (color) {
+      case 'blue':
+        return Character_animation_sheet_blue;
+      case 'black':
+        return Character_animation_sheet_black;
+      case 'brown':
+        return Character_animation_sheet_brown;
+      case 'gray':
+        return Character_animation_sheet_gray;
+      case 'green':
+        return Character_animation_sheet_green;
+      case 'pink':
+        return Character_animation_sheet_pink;
+      case 'purple':
+        return Character_animation_sheet_purple;
+      case 'red':
+        return Character_animation_sheet_red;
+      case 'white':
+        return Character_animation_sheet_white;
+      case 'yellow':
+        return Character_animation_sheet_yellow;
+    }
   }
 
 

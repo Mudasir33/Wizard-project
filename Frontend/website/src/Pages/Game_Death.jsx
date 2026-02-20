@@ -40,7 +40,7 @@ function spectate(){
         <h1>{won ? "Victory!   " : "Dead   "}</h1>
         <h2>Place: {placement}</h2>
 
-        <button onClick={spectate}>Spectate</button>
+        <button name = "spectate" onClick={spectate}>Spectate</button>
         <button onClick={back}>Back</button>
     
     

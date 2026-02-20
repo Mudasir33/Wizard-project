@@ -54,6 +54,8 @@ export default function Game() {
 
   const [showdeath, setdeath] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
+  const [isJoinedAsSpectator] = useState(false);
+  const spectatorListRef = useRef({});
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -96,12 +98,6 @@ export default function Game() {
     const TILE_SIZE = 16; // tile width/height in source image
     const DESIRED_TILES_ACROSS = 20; // aim to show ~this many tiles across the screen
     let scaleup_constant = Math.max(1, canvas.width / (DESIRED_TILES_ACROSS * TILE_SIZE));
-
-
-
-
-
-
 
 ///////////////////////////CANVAS/interface RESIZE/////////////////
     let test_h=10;
@@ -187,16 +183,6 @@ export default function Game() {
     window.addEventListener("resize", pixelRatio);
     window.visualViewport.addEventListener("resize", pixelRatio); //to change the size of safari
 
-
-
-
-
-
-
-
-
-
-
     //zone radius and time
     let radius =   canvas.width*2 ;
     let smallRadius = radius;
@@ -281,25 +267,10 @@ export default function Game() {
       }
     }, 1000);
 
-
-
-
-    /*
-        socket.on('map', (loadmap) => {
-          map = loadmap;
-           console.log('tesst', map.layers[3].length);
-           gameLoopActive = true;
-          requestAnimationFrame(loop);
-        });
-       */
     function mapOn(loadmap) {
       map = loadmap;
       gameLoopActive = true;
-
-
       requestAnimationFrame(loop);
-
-
     }
     socket.on("map", mapOn);
     const frontendPlayers = frontendPlayersRef.current;
@@ -315,7 +286,7 @@ export default function Game() {
 
 
         if (!frontendPlayers[id]) {
-          frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y);
+          frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y, backendPlayer.color);
         } else {
           frontendPlayers[id].x = backendPlayer.x;
           frontendPlayers[id].y = backendPlayer.y;
@@ -354,12 +325,24 @@ export default function Game() {
         for (const id in frontendPlayers) {
           if (!backendPlayers[id]) delete frontendPlayers[id];
         }
+        // Auto-enable spectate mode if user is a spectator (not a player and in spectator list)
+        if (!backendPlayers[socket.id] && spectatorListRef.current[socket.id] && !isSpectatingRef.current) {
+          setIsSpectating(true);
+        }
         // console.log(frontendPlayers);
       }
 
     }
 
     socket.on("updatePlayers", OnupdatePlayer);
+    
+    socket.on("spectatorList", (spectators) => {
+      spectatorListRef.current = spectators;
+      // Enable spectate if this user is in the spectator list
+      if (spectators[socket.id] && !isSpectatingRef.current) {
+        setIsSpectating(true);
+      }
+    });
 
 
     const keys = keysRef.current;
@@ -425,10 +408,6 @@ export default function Game() {
     }
     socket.on('updateProjectiles', OnupdateProjectiles);
 
-    
-   
-
-
     //####SPELLS#############################################################################################
     let direction = {
       x: 0,
@@ -441,9 +420,6 @@ export default function Game() {
     let spelllist = [];
     let previous_state = false;
 
-    
-    
-    
      // Sizes (in px, scaled)
     const JOYSTICK_RADIUS = canvas.width * 0.03;
     const BUTTON_RADIUS = canvas.width * 0.025;
@@ -466,17 +442,7 @@ export default function Game() {
     const b2Y = spellJoystickY - JOYSTICK_RADIUS - buttonSpacing * 1.15;
     const b3X = spellJoystickX - buttonSpacing * 3.2;
     const b3Y = spellJoystickY;
-/*
-    // Create UI
-    joystickRef.current = new Joystick(joystickX, joystickY, JOYSTICK_RADIUS);
-    joystickRef.current.attachEvents(canvas);
-    spellJoystickRef.current = new Joystick(spellJoystickX, spellJoystickY, JOYSTICK_RADIUS);
-    spellJoystickRef.current.attachEvents(canvas);
 
-    buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
-    buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
-    buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
-    */
     function updatePlayer() {
             // Check for item pickup (collision)
             for (let i = itemRef.current.length - 1; i >= 0; i--) {
@@ -603,23 +569,6 @@ export default function Game() {
         roomkey
 
       })
-
-      /*
-      if (frontendPlayers[socket.id]) {
-        console.log("Creating spell:", spellName, "Direction:", spellDirection, "Spell list length before:", spelllist.length);
-        spelllist.push(
-          new Spell(
-            frontendPlayers[socket.id].x,
-            frontendPlayers[socket.id].y,
-            spell_list[spellName],
-            spellDirection
-          )
-        );
-        console.log("Spell created! Total spells:", spelllist.length);
-      } else {
-        console.warn("Cannot create spell - no player");
-      }
-        */
     }
 
     //####CHANGE SPELL#############################################################################################
@@ -722,66 +671,6 @@ export default function Game() {
             }
           }
         }
-        /*
-        //set the overlay canvas for the zone 
-        const zoneWorldX = (TILE_SIZE ) / 100;
-        const zoneWorldY = (TILE_SIZE ) / 100;
-        const player = isSpectatingRef.current ? null : frontendPlayers[socket.id];
-        const cx = !isSpectatingRef.current ? (cameraOffsetX + (zoneWorldX-player.x) * scaleup_constant) : cameraOffsetX;
-        const cy = !isSpectatingRef.current ? (cameraOffsetY + (zoneWorldY-player.y) * scaleup_constant) : cameraOffsetY;
-        const circleX= (width * TILE_SIZE* scaleup_constant);
-        const circleY= (height * TILE_SIZE * scaleup_constant);
-        const playerX = !isSpectatingRef.current ? (player.x * scaleup_constant) : 0;
-        const playerY = !isSpectatingRef.current ? (player.y * scaleup_constant) : 0;
-        
-        //set the time for the game play
-        if (startTime === null) {
-          startTime = timestamp;
-        }
-        const elapsed = timestamp - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        // Blue background zone
-        cctx.globalCompositeOperation = 'source-over';
-        cctx.clearRect(0, 0, c.width, c.height);
-        cctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
-        cctx.fillRect(cx, cy , width * TILE_SIZE* scaleup_constant, height * TILE_SIZE * scaleup_constant);
-        cctx.fill();
-
-        //Shrinks the zone to end
-        smallRadius = startRadius * (1 - progress);
-        if (smallRadius > 0) {
-          cctx.globalCompositeOperation = 'destination-out';
-          cctx.fillStyle = 'rgba(0,0,0,1)';
-          cctx.beginPath();
-          cctx.arc(cx+(circleX/2), cy+(circleY/2), smallRadius, 0, Math.PI * 2);
-          cctx.fill();   
-          
-        }
-
-        //checks if player is outside zone
-        function isBlue() {
-          const postion = cctx.getImageData(cx+playerX, cy+playerY , 50, 80).data;
-          const [r, g, b, a] = postion;          
-           if( r === 0 && g === 0 && b === 255 && a === 128){
-            
-            
-            return true;
-           }
-          return false;
-        }
-
-        if (!isSpectatingRef.current) {
-          const state = isBlue();
-          socket.emit('zone', {state, roomkey});
-        }
-
-      
-          */
- 
-        // tiny red debug square on top (optional, you can remove this)
-        //ctx.fillStyle = '#ff0000';
-        //ctx.fillRect(0, 0, 10 * scaleup_constant, 10 * scaleup_constant);
 
         // Update animations
         const deltaTime = (timestamp - lastTime) / 1000; // in seconds
@@ -817,27 +706,6 @@ export default function Game() {
           }
         });
 
-
-        //Old local spell drawing code (now handled by server updates)
-        /* Draw and update spells with proper camera offset (still in world transform)
-        const camX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
-        const camY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
-        
-      
-         Old local spell drawing code (now handled by server updates)
-        for (let i = spelllist.length - 1; i >= 0; i--) {
-          try {
-            const s = spelllist[i];
-            if (s) {
-              s.draw(ctx, scaleup_constant);
-              s.update();
-            }
-          } catch (error) {
-            console.error("Error with spell:", error);
-          }
-        }
-        */
-
         // Reset canvas transformation to draw UI (joystick) in screen coordinates
         ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
@@ -849,16 +717,16 @@ export default function Game() {
 
           // Draw spell joystick and buttons (fixed to screen, not affected by camera)
           spellJoystickRef.current.draw(ctx);
-          buttonsRef.current.b1.draw(ctx);
-          // Draw button 1 icon if available
-          if (button1IconRef.current && button1IconRef.current.image && button1IconRef.current.image.complete && b1X && b1Y && BUTTON_RADIUS) {
+          if (button1IconRef.current && button1IconRef.current.image) {
+            const btn = buttonsRef.current.b1;
+            const iconSize = btn.r * 2;
             ctx.save();
             ctx.drawImage(
               button1IconRef.current.image,
-              b1X - BUTTON_RADIUS,
-              b1Y - BUTTON_RADIUS,
-              BUTTON_RADIUS * 2,
-              BUTTON_RADIUS * 2
+              btn.x - btn.r,
+              btn.y - btn.r,
+              iconSize,
+              iconSize
             );
             ctx.restore();
           }
@@ -912,21 +780,6 @@ export default function Game() {
       // console.log("inputs:", playerInputs);
     }, 15);
 
-
-
-  
-
-    //####EVENT HANDLERS FOR BUTTONS AND JOYSTICKS#############################################################################################
-    // Setup button event handlers
-/*
-    buttonsRef.current.b1.setCanvas(canvas);
-    buttonsRef.current.b2.setCanvas(canvas);
-    buttonsRef.current.b3.setCanvas(canvas);
-    buttonsRef.current.b1.Eventen();
-    buttonsRef.current.b2.Eventen();
-    buttonsRef.current.b3.Eventen();
-*/
-
     // Handle spectate exit button click
     const handleCanvasClick = (e) => {
       if (isSpectatingRef.current && canvasRef.current.exitSpectateButton) {
@@ -964,27 +817,20 @@ export default function Game() {
        setdeath(true);
     }
 
-
-
-
     socket.on("death", death);
     socket.on("winner", winner)
-
-
-
 
     return () => {
       socket.off('map', mapOn);
       socket.off('updateProjectiles', OnupdateProjectiles);
       socket.off("updatePlayers", OnupdatePlayer);
+      socket.off("spectatorList");
       socket.off("death",death)
       socket.off("winner", winner)
       clearInterval(itemSpawnInterval);
       canvas.removeEventListener('click', handleCanvasClick);
     };
   }, [])
-
-
 
   return (
     <div >
