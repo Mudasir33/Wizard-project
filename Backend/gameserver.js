@@ -38,12 +38,10 @@ function startRoomWorker(roomName, initialState) {
             if (!sessions[roomName]) sessions[roomName] = {};
             const clonedPlayers = JSON.parse(JSON.stringify(msg.state.players));
             const clonedMove = JSON.parse(JSON.stringify(msg.state.move));
-            const clonedBackendProjectiles = JSON.parse(JSON.stringify(msg.state.backendProjectiles));
             const clonedMap = msg.state.map ? JSON.parse(JSON.stringify(msg.state.map)) : null;
             const clonedItems = msg.state.items ? JSON.parse(JSON.stringify(msg.state.items)) : [];
             sessions[roomName].players = clonedPlayers;
             sessions[roomName].move = clonedMove;
-            sessions[roomName].backendProjectiles = clonedBackendProjectiles;
             sessions[roomName].map = clonedMap;
             sessions[roomName].items = clonedItems;
             sessions[roomName].numready = msg.state.numready;
@@ -51,7 +49,6 @@ function startRoomWorker(roomName, initialState) {
             sessions[roomName].ongoing = msg.state.ongoing;
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
             io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
-            io.to(roomName).emit('updateProjectiles', clonedBackendProjectiles, roomName);
             io.to(roomName).emit('spawnItems', clonedItems, roomName);
             
             if(!msg.state.ongoing || ongoing_change){
@@ -65,6 +62,10 @@ function startRoomWorker(roomName, initialState) {
                 
                
         }   
+        } else if (msg.type === 'projectileSpawned') {
+            io.to(roomName).emit('projectileSpawned', msg.projectileId, msg.projectile);
+        } else if (msg.type === 'projectileDeleted') {
+            io.to(roomName).emit('projectileDeleted', msg.projectileId, msg.x, msg.y, msg.spellName);
         } else if (msg.type === 'joined') {
             io.sockets.sockets.get(msg.socketId)?.emit('joined', roomName);
         } else if (msg.type === 'error') {
@@ -175,7 +176,15 @@ async function startServer() {
 
 
             }  // Forward to worker if needed
+
+
+
         });
+
+        socket.on("update_vel", (vel)=>{
+            
+        }
+                )
 
 
         const join = (username, room) => {

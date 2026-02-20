@@ -43,6 +43,8 @@ export default function Game() {
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
+  const activeUtilitiesRef = useRef([]);
+
 
 
 
@@ -137,7 +139,7 @@ export default function Game() {
 
       buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
       buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
-      buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
+      buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", ()=> changehaste(3));
       
       buttonsRef.current.b1.setCanvas(canvas);
       buttonsRef.current.b2.setCanvas(canvas);
@@ -240,7 +242,7 @@ export default function Game() {
         y: pos.y * TILE_SIZE + TILE_SIZE / 2,
         active: true,
         type: "spell",
-        Key: pickup.key,
+        key: pickup.key,
         image: create_image(pickup.texture),
         image_pickup:create_image(fireballPickup)
       });
@@ -299,20 +301,28 @@ export default function Game() {
 
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
 
+            // Replay inputs with wall sliding collision
+            const obj = map;
             playerInputs.forEach((input) => {
-              frontendPlayers[id].x += input.dx;
-              frontendPlayers[id].y += input.dy;
+              const player = frontendPlayers[id];
+              
+              // Try X movement
+              const oldX = player.x;
+              player.x += input.dx;
+              if (obj && wallCollison(obj, player)) {
+                player.x = oldX;
+              }
+              
+              // Try Y movement
+              const oldY = player.y;
+              player.y += input.dy;
+              if (obj && wallCollison(obj, player)) {
+                player.y = oldY;
+              }
             });
           } else {
             frontendPlayers[id].x = backendPlayer.x;
             frontendPlayers[id].y = backendPlayer.y;
-            /*
-            gsap.to(frontendPlayers[id], {
-              x: backendPlayer.x,
-              y: backendPlayer.y,
-              duration: 0.015,
-              ease: 'linear'
-            }); */
           }
         }
         
@@ -381,36 +391,32 @@ export default function Game() {
     //##########Projectiles/spells##########################################################################################
 
     const frontEndProjectiles = frontEndProjectilesRef.current;
-    function OnupdateProjectiles(backendProjectiles) {
-      for (const id in backendProjectiles) {
-        const backendProjectile = backendProjectiles[id];
-
-        if (!frontEndProjectiles[id]) {
-          frontEndProjectiles[id] = new Spell(
-            backendProjectile.x,
-            backendProjectile.y,
-            spell_list[backendProjectile.spellName],
-            backendProjectile.spellDirection
-          );
-          // Store spell name for explosion check
-          frontEndProjectiles[id].spellName = backendProjectile.spellName;
-        } else {
-          frontEndProjectiles[id].x = backendProjectile.x;
-          frontEndProjectiles[id].y = backendProjectile.y;
-        }
-      }
-      for (const id in frontEndProjectiles) {
-        if (!backendProjectiles[id]) {
-          // Spawn explosion if it was a fireball
-          const proj = frontEndProjectiles[id];
-          if (proj.spellName === 'fireball') {
-            explosionManagerRef.current.spawn(proj.x, proj.y);
-          }
-          delete frontEndProjectiles[id];
-        }
+    
+    // Handle new projectile spawned (only receive spawn data, calculate movement locally)
+    function OnProjectileSpawned(projectileId, projectile) {
+      if (!frontEndProjectiles[projectileId]) {
+        frontEndProjectiles[projectileId] = new Spell(
+          projectile.x,
+          projectile.y,
+          spell_list[projectile.spellName],
+          projectile.spellDirection
+        );
+        frontEndProjectiles[projectileId].spellName = projectile.spellName;
       }
     }
-    socket.on('updateProjectiles', OnupdateProjectiles);
+    socket.on('projectileSpawned', OnProjectileSpawned);
+    
+    // Handle projectile deleted (hit wall/player)
+    function OnProjectileDeleted(projectileId, x, y, spellName) {
+      if (frontEndProjectiles[projectileId]) {
+        // Spawn explosion at server-reported position if fireball
+        if (spellName === 'fireball') {
+          explosionManagerRef.current.spawn(x, y);
+        }
+        delete frontEndProjectiles[projectileId];
+      }
+    }
+    socket.on('projectileDeleted', OnProjectileDeleted);
 
     //####SPELLS#############################################################################################
     let direction = {
@@ -459,14 +465,15 @@ export default function Game() {
                 if (dist < 15) {
                   // Set button 1 icon to this spell
                   if(item.type === "spell"){
-                  
-                  button1IconRef.current = { key: item.Key, image: item.image_pickup };
+                    
+                  button1IconRef.current = { key: item.key, image: item.image_pickup };
           
                   }
                   if(item.type ==="utility"){
-                     
-                      button3IconRef.current = { key: item.Key, image: item.image_pickup };
-             
+          
+                      button3IconRef.current = { key: item.key, image: item.image_pickup };
+                      console.log("button3IconRef:", button3IconRef)
+                      
 
                   }
                     itemRef.current.splice(i, 1);
@@ -504,12 +511,10 @@ export default function Game() {
         dy *= inv;
       }
       const obj = map;
-      // Update player position
+      // Update player position with wall sliding (match server logic)
       if (frontendPlayers[socket.id]) {
-        //if statement om x och y 
-        
         const player = frontendPlayers[socket.id];
-        const speed = player.speed || 100;
+        const speed = player.speed;
         player.x += dx * speed * 0.015;
         player.y += dy * speed * 0.015;
         if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
@@ -544,7 +549,7 @@ export default function Game() {
       }
 
       // Log right joystick state for debugging
-    
+      
 
       // SAVE direction BEFORE state change happens
       if (previous_state == true && spellJoystickRef.current.isPressed == false) {
@@ -559,6 +564,11 @@ export default function Game() {
         console.log("SHOOT TRIGGERED! Direction:", lastValidDirection, "Spell:", spellToCast);
         spellCreate(spellToCast, lastValidDirection, roomkey);
       }
+
+     
+        
+      
+
       // Update state AFTER we process the release
       previous_state = spellJoystickRef.current.isPressed;
     }
@@ -584,11 +594,19 @@ export default function Game() {
       }
     }
 
-     function Utiliy(button) {
-      // Button 4: equip spell_list
-      if (button === 3 && button3IconRef.current) {
-        equippedSpellRef.current = button1IconRef.current.key;
-        console.log("Equipped spell:", equippedSpellRef.current);
+    function changehaste(button){
+       if (button === 3 && button3IconRef.current) {
+      equippedSpellRef.current = button3IconRef.current.key;
+      console.log("haste pressed:", button3IconRef.current.key);
+      const key = button3IconRef.current.key
+      const utility1 = utility_list[key]
+    
+        equippedSpellRef.current = button3IconRef.current.key;
+       const util = new  Utility(frontendPlayers[socket.id], utility1 )
+        activeUtilitiesRef.current.push(util);
+        button3IconRef.current = null;
+        equippedSpellRef.current = null;
+
       }
     }
 
@@ -636,6 +654,12 @@ export default function Game() {
             cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
           );
           updatePlayer();
+          
+        
+
+  
+
+
         }
 
 
@@ -683,14 +707,23 @@ export default function Game() {
           player.update(deltaTime); 
           
         });
+        activeUtilitiesRef.current = (activeUtilitiesRef.current || []).filter(util =>{
+          console.log("update time haste")
+          util.update(deltaTime);
+          return util.active;
+        })
+
+
 
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
           player.draw(ctx, scaleup_constant);
         }
 
+        // Update projectiles locally (position calculated client-side)
         for (const id in frontEndProjectiles) {
           const projectile = frontEndProjectiles[id];
+          projectile.update(deltaTime);
           projectile.draw(ctx, scaleup_constant);
         }
 
@@ -703,7 +736,7 @@ export default function Game() {
           cameraFocusX = mapCenterX;
           cameraFocusY = mapCenterY;
         } else {
-          const currentPlayer = frontendPlayers[socket.id];
+        const currentPlayer = frontendPlayers[socket.id];
           cameraFocusX = currentPlayer?.x || 0;
           cameraFocusY = currentPlayer?.y || 0;
         }
@@ -841,7 +874,8 @@ export default function Game() {
 
     return () => {
       socket.off('map', mapOn);
-      socket.off('updateProjectiles', OnupdateProjectiles);
+      socket.off('projectileSpawned', OnProjectileSpawned);
+      socket.off('projectileDeleted', OnProjectileDeleted);
       socket.off("updatePlayers", OnupdatePlayer);
       socket.off("spectatorList");
       socket.off("death",death)
