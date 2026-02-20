@@ -65,7 +65,7 @@ export const spell_list = {
         texture: fire,
         speed: 200,  // Match backend speed (units per second)
         damage: 25,
-        size: 12,
+        size: 18,
         aoeRadius: 50
     },
     magic_missile: {
