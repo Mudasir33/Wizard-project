@@ -273,7 +273,7 @@ export default function Game() {
 
 
         if (!frontendPlayers[id]) {
-          frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y);
+          frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y, backendPlayer.color);
         } else {
           frontendPlayers[id].x = backendPlayer.x;
           frontendPlayers[id].y = backendPlayer.y;

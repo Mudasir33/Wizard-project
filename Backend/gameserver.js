@@ -27,7 +27,7 @@ const io = new Server(server, {
 
 let sessions = {};
 const roomWorkers = {};
-const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
+const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'pink'];
 
 function startRoomWorker(roomName, initialState) {
     const worker = new Worker(path.join(__dirname, 'workerRoom.js'), {
