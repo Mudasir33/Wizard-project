@@ -142,6 +142,12 @@ function handleInput(msg) {
                 damage: stats.damage,
                 aoeRadius: stats.aoeRadius
             };
+            // Notify clients about new projectile
+            parentPort.postMessage({ 
+                type: 'projectileSpawned', 
+                projectileId,
+                projectile: backendProjectiles[projectileId]
+            });
             break;
         }
         case 'keyup': {
@@ -178,7 +184,6 @@ function handleInput(msg) {
         id: roomName,
         players,
         move: playerInput,
-        backendProjectiles,
         map,
         items,
         numready,
@@ -290,6 +295,14 @@ function gameloop() {
                     }
                 }
             }
+            // Notify clients about deleted projectile
+            parentPort.postMessage({ 
+                type: 'projectileDeleted', 
+                projectileId: id,
+                x: projectile.x,
+                y: projectile.y,
+                spellName: projectile.spellName
+            });
             delete backendProjectiles[id];
             continue;
         }
@@ -301,13 +314,12 @@ setInterval(() => {
     gameloop();
 }, 15);
 
-// Network updates throttled to every 30ms
+// Network updates throttled to every 150ms (projectiles handled separately)
 let lastState = null;
 setInterval(() => {
     const currentState = {
         players,
         move: playerInput,
-        backendProjectiles,
         map,
         items,
         numready,
@@ -329,7 +341,6 @@ setInterval(() => {
             id: roomName,
             players,
             move: playerInput,
-            backendProjectiles,
             map,
             items,
             numready,
