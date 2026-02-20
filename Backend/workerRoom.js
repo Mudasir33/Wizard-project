@@ -1,5 +1,6 @@
 const { wallCollison, ProjectilePlayerCollision } = require('./gameShared');
 const { parentPort, workerData } = require('worker_threads');
+const { enviormentEffects } = require('./enviormentEffects.js');
 
 let { roomName, initialState } = workerData;
 let players = JSON.parse(JSON.stringify(initialState.players));
@@ -61,17 +62,17 @@ function handleInput(msg) {
         }
 
         case 'restart_game': {
-            if(Object.keys(players).length === 0){
-            console.log("restart game", Object.keys(players).length )
+            if (Object.keys(players).length === 0) {
+                console.log("restart game", Object.keys(players).length)
 
-            playerInput = {}
-            backendProjectiles = {};
-            map = null;
-            ongoing = false;
-            numready = 0;
-            items = [];
+                playerInput = {}
+                backendProjectiles = {};
+                map = null;
+                ongoing = false;
+                numready = 0;
+                items = [];
             }
-          
+
             break;
         }
 
@@ -123,14 +124,14 @@ function handleInput(msg) {
             }
             player.lastSpellCast = now;
             projectileId += 1;
-            
+
             // Spell stats defined server-side
             const spellStats = {
                 fireball: { speed: 200, damage: 25, aoeRadius: 50 },
                 magic_missile: { speed: 100, damage: 12, aoeRadius: 0 }
             };
             const stats = spellStats[msg.spellName] || spellStats.magic_missile;
-            
+
             backendProjectiles[projectileId] = {
                 spellName: msg.spellName,
                 spellDirection: msg.spellDirection,
@@ -155,35 +156,37 @@ function handleInput(msg) {
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
-            
+
             }
             break;
         }
         case 'delete_user': {
-            
+
             if (players[msg.socketId]) {
                 console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
-              
+
             }
             break;
         }
         default:
             break;
     }
-    
-    parentPort.postMessage({ type: 'update', state: {
-        id: roomName,
-        players,
-        move: playerInput,
-        backendProjectiles,
-        map,
-        items,
-        numready,
-        ongoing
-    }});
+
+    parentPort.postMessage({
+        type: 'update', state: {
+            id: roomName,
+            players,
+            move: playerInput,
+            backendProjectiles,
+            map,
+            items,
+            numready,
+            ongoing
+        }
+    });
 }
 
 
@@ -238,9 +241,9 @@ function gameloop() {
         let dy = direction.y;
         projectile.x += dx * projectile.speed * 0.015;
         projectile.y += dy * projectile.speed * 0.015;
-        
+
         let projectileHit = false;
-        
+
         if (wallCollison({ objectLayers: [map] }, projectile)) {
             projectileHit = true;
         }
@@ -256,10 +259,10 @@ function gameloop() {
         if (projectileHit) {
             const aoeRadius = projectile.aoeRadius || 0;
             const damage = projectile.damage || 10;
-            
+
             for (const pid in players) {
                 if (pid === projectile.playerId || players[pid].alive === false) continue;
-                
+
                 const player = players[pid];
                 const distX = player.x - projectile.x;
                 const distY = player.y - projectile.y;
@@ -268,9 +271,9 @@ function gameloop() {
                 if (distance <= aoeRadius || ProjectilePlayerCollision(projectile, player)) {
                     const damageMult = aoeRadius > 0 ? Math.max(0.5, 1 - (distance / aoeRadius) * 0.5) : 1;
                     const finalDamage = Math.round(damage * damageMult);
-                    
+
                     players[pid].health -= finalDamage;
-                    
+
                     if (players[pid].health <= 0 && players[pid].alive === true) {
                         players[pid].alive = false;
                         const aliveplayers = Object.keys(players).filter(id => players[id].alive);
@@ -286,10 +289,35 @@ function gameloop() {
             delete backendProjectiles[id];
             continue;
         }
+
     }
+    for (const effectid in activeeffects) {
+        // console.log(activeeffects[effectid].effect);
+        activeeffects[effectid].applyeffect(players, activeeffects[effectid].effect);
+    }
+
+    //run environmental effects
+
 }
 
-// Game logic runs at 15ms
+let activeeffects = {};
+let num = 0;
+let windscounter = 0;
+// loop for creating wind effect every 10 sec
+setInterval(() => {
+    if (windscounter == 0) {
+        activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
+        windscounter++;
+        console.log("created wind");
+    } else if (windscounter == 1){
+        activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
+        activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
+    }
+    num++;
+    console.log(activeeffects);
+}, 10000);
+
+
 setInterval(() => {
     gameloop();
 }, 15);
@@ -318,16 +346,18 @@ setInterval(() => {
         }
     }
     if (changed) {
-        parentPort.postMessage({ type: 'update', state: {
-            id: roomName,
-            players,
-            move: playerInput,
-            backendProjectiles,
-            map,
-            items,
-            numready,
-            ongoing
-        }});
+        parentPort.postMessage({
+            type: 'update', state: {
+                id: roomName,
+                players,
+                move: playerInput,
+                backendProjectiles,
+                map,
+                items,
+                numready,
+                ongoing
+            }
+        });
         lastState = { ...currentState };
     }
 }, 150);
