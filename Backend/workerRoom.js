@@ -48,7 +48,7 @@ function handleInput(msg) {
                 health: 100,
                 alive: true,
                 id: index + 1,
-                speed: 100,
+                speed: 200,
                 sequenceNumber: 0,
                 dx: 0,
                 dy: 0,
@@ -194,6 +194,8 @@ function gameloop() {
         const player = players[id];
         const input = playerInput[id];
         if (!input) continue;
+        if (player.alive === false) continue;
+        
         let dx = input.dx;
         let dy = input.dy;
         if (dx !== 0 && dy !== 0) {
@@ -201,17 +203,22 @@ function gameloop() {
             dx *= inv;
             dy *= inv;
         }
-        player.x += (dx * player.speed * 0.015);
-        player.y += (dy * player.speed * 0.015);
-        if (!wallCollison({ objectLayers: [map] }, player)) {
-            player.x += (dx * player.speed * 0.015);
-            player.y += (dy * player.speed * 0.015);
-        } else {
-            if (player.alive === false) continue;
-            if ((0.1 <= dx && dx <= 1) || (0.1 <= dy && dy <= 1) || (-1 <= dx && dx <= -0.1) || (-1 <= dy && dy <= -0.1)) {
-                player.x += (-dx * player.speed * 0.015);
-                player.y += (-dy * player.speed * 0.015);
-            }
+        
+        const moveX = dx * player.speed * 0.015;
+        const moveY = dy * player.speed * 0.015;
+        
+        // Try X movement first
+        const oldX = player.x;
+        player.x += moveX;
+        if (wallCollison({ objectLayers: [map] }, player)) {
+            player.x = oldX; // Revert X if collision
+        }
+        
+        // Try Y movement separately
+        const oldY = player.y;
+        player.y += moveY;
+        if (wallCollison({ objectLayers: [map] }, player)) {
+            player.y = oldY; // Revert Y if collision
         }
     }
     for (const pid in players) {

@@ -30,7 +30,7 @@ function wallCollison(object, player) {
 function ProjectilePlayerCollision(projectile, player) {
     const projectile_x = projectile.x;
     const projectile_y = projectile.y;
-    const projectile_size = 5; // assuming projectile is a square of size 5x5
+    const projectile_size = 5;
     const player_x = player.x;
     const player_y = player.y;
     const player_width = 16;

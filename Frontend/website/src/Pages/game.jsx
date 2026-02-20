@@ -299,20 +299,28 @@ export default function Game() {
 
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
 
+            // Replay inputs with wall sliding collision
+            const obj = map;
             playerInputs.forEach((input) => {
-              frontendPlayers[id].x += input.dx;
-              frontendPlayers[id].y += input.dy;
+              const player = frontendPlayers[id];
+              
+              // Try X movement
+              const oldX = player.x;
+              player.x += input.dx;
+              if (obj && wallCollison(obj, player)) {
+                player.x = oldX;
+              }
+              
+              // Try Y movement
+              const oldY = player.y;
+              player.y += input.dy;
+              if (obj && wallCollison(obj, player)) {
+                player.y = oldY;
+              }
             });
           } else {
             frontendPlayers[id].x = backendPlayer.x;
             frontendPlayers[id].y = backendPlayer.y;
-            /*
-            gsap.to(frontendPlayers[id], {
-              x: backendPlayer.x,
-              y: backendPlayer.y,
-              duration: 0.015,
-              ease: 'linear'
-            }); */
           }
         }
         
@@ -504,27 +512,26 @@ export default function Game() {
         dy *= inv;
       }
       const obj = map;
-      // Update player position
+      // Update player position with wall sliding (match server logic)
       if (frontendPlayers[socket.id]) {
-        //if statement om x och y 
-        
         const player = frontendPlayers[socket.id];
         const speed = player.speed || 100;
-        player.x += dx * speed * 0.015;
-        player.y += dy * speed * 0.015;
-        if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
-                player.x += (dx * player.speed * 0.015) ;
-                player.y += (dy * player.speed * 0.015);
-
-
-            }else{
-                //if collision is true from input the characters will move away from the wall
-                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
-                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
-                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
-
-                }
-              }
+        const moveX = dx * speed * 0.015;
+        const moveY = dy * speed * 0.015;
+        
+        // Try X movement first
+        const oldX = player.x;
+        player.x += moveX;
+        if (wallCollison(obj, player)) {
+          player.x = oldX; // Revert X if collision
+        }
+        
+        // Try Y movement separately
+        const oldY = player.y;
+        player.y += moveY;
+        if (wallCollison(obj, player)) {
+          player.y = oldY; // Revert Y if collision
+        }
 
         // Send combined movement input to server (always, even when 0, to stop movement)
         player.dx = dx;
