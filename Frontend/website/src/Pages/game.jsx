@@ -43,6 +43,8 @@ export default function Game() {
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
+  const activeUtilitiesRef = useRef([]);
+
 
 
 
@@ -137,7 +139,7 @@ export default function Game() {
 
       buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
       buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
-      buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", null);
+      buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", ()=> changehaste(3));
       
       buttonsRef.current.b1.setCanvas(canvas);
       buttonsRef.current.b2.setCanvas(canvas);
@@ -240,7 +242,7 @@ export default function Game() {
         y: pos.y * TILE_SIZE + TILE_SIZE / 2,
         active: true,
         type: "spell",
-        Key: pickup.key,
+        key: pickup.key,
         image: create_image(pickup.texture),
         image_pickup:create_image(fireballPickup)
       });
@@ -459,14 +461,15 @@ export default function Game() {
                 if (dist < 15) {
                   // Set button 1 icon to this spell
                   if(item.type === "spell"){
-                  
-                  button1IconRef.current = { key: item.Key, image: item.image_pickup };
+                    
+                  button1IconRef.current = { key: item.key, image: item.image_pickup };
           
                   }
                   if(item.type ==="utility"){
-                     
-                      button3IconRef.current = { key: item.Key, image: item.image_pickup };
-             
+          
+                      button3IconRef.current = { key: item.key, image: item.image_pickup };
+                      console.log("button3IconRef:", button3IconRef)
+                      
 
                   }
                     itemRef.current.splice(i, 1);
@@ -509,7 +512,7 @@ export default function Game() {
         //if statement om x och y 
         
         const player = frontendPlayers[socket.id];
-        const speed = player.speed || 100;
+        const speed = player.speed;
         player.x += dx * speed * 0.015;
         player.y += dy * speed * 0.015;
         if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
@@ -544,7 +547,7 @@ export default function Game() {
       }
 
       // Log right joystick state for debugging
-    
+      
 
       // SAVE direction BEFORE state change happens
       if (previous_state == true && spellJoystickRef.current.isPressed == false) {
@@ -559,6 +562,11 @@ export default function Game() {
         console.log("SHOOT TRIGGERED! Direction:", lastValidDirection, "Spell:", spellToCast);
         spellCreate(spellToCast, lastValidDirection, roomkey);
       }
+
+     
+        
+      
+
       // Update state AFTER we process the release
       previous_state = spellJoystickRef.current.isPressed;
     }
@@ -584,11 +592,19 @@ export default function Game() {
       }
     }
 
-     function Utiliy(button) {
-      // Button 4: equip spell_list
-      if (button === 3 && button3IconRef.current) {
-        equippedSpellRef.current = button1IconRef.current.key;
-        console.log("Equipped spell:", equippedSpellRef.current);
+    function changehaste(button){
+       if (button === 3 && button3IconRef.current) {
+      equippedSpellRef.current = button3IconRef.current.key;
+      console.log("haste pressed:", button3IconRef.current.key);
+      const key = button3IconRef.current.key
+      const utility1 = utility_list[key]
+    
+        equippedSpellRef.current = button3IconRef.current.key;
+       const util = new  Utility(frontendPlayers[socket.id], utility1 )
+        activeUtilitiesRef.current.push(util);
+        button3IconRef.current = null;
+        equippedSpellRef.current = null;
+
       }
     }
 
@@ -636,6 +652,12 @@ export default function Game() {
             cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
           );
           updatePlayer();
+          
+        
+
+  
+
+
         }
 
 
@@ -683,6 +705,13 @@ export default function Game() {
           player.update(deltaTime); 
           
         });
+        activeUtilitiesRef.current = (activeUtilitiesRef.current || []).filter(util =>{
+          console.log("update time haste")
+          util.update(deltaTime);
+          return util.active;
+        })
+
+
 
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
@@ -703,7 +732,7 @@ export default function Game() {
           cameraFocusX = mapCenterX;
           cameraFocusY = mapCenterY;
         } else {
-          const currentPlayer = frontendPlayers[socket.id];
+        const currentPlayer = frontendPlayers[socket.id];
           cameraFocusX = currentPlayer?.x || 0;
           cameraFocusY = currentPlayer?.y || 0;
         }

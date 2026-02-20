@@ -175,7 +175,15 @@ async function startServer() {
 
 
             }  // Forward to worker if needed
+
+
+
         });
+
+        socket.on("update_vel", (vel)=>{
+            
+        }
+                )
 
 
         const join = (username, room) => {
