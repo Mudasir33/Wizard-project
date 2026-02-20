@@ -37,19 +37,16 @@ export class Spell {
     }
     draw(context, scaleup_constant) {
         if (!this.sprite.loaded) {
-            return; // Don't try to draw if image hasn't loaded yet
+            return;
         }
         try {
-             // Calculate angle based on direction
             const angle = Math.atan2(this.dy, this.dx);
             const drawX = this.x * scaleup_constant;
             const drawY = this.y * scaleup_constant;
             const size = this.size;
             context.save();
-            // Move to center of spell
             context.translate(drawX + size / 2, drawY + size / 2);
             context.rotate(angle);
-            // Draw image centered
             context.drawImage(
                 this.sprite,
                 -size / 2,

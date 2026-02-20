@@ -244,8 +244,7 @@ function gameloop() {
         if (wallCollison({ objectLayers: [map] }, projectile)) {
             projectileHit = true;
         }
-        
-        // Check direct hit on players
+
         for (const pid in players) {
             if (ProjectilePlayerCollision(projectile, players[pid])) {
                 if (pid === projectile.playerId || players[pid].alive === false) break;
