@@ -59,16 +59,7 @@ export default function menu() {
           <div><button name="menu"  onClick={() => nav("/SpectateSession")}>Spectate</button></div>
           <div><button name="menu"  >Customize</button></div>
           <div><button name="menu" onClick={()=> setGuide(true)} >Guide</button></div>
-          {autoplayBlocked && (
-            <div style={{ marginTop: 10 }}>
-              <button name="menu" onClick={() => {
-                audioRef.current.play().then(() => {
-                  setIsPlaying(true);
-                  setAutoplayBlocked(false);
-                }).catch((err) => console.log('Play failed:', err));
-              }}>Play Music</button>
-            </div>
-          )}
+
           {isPlaying && (
             <div style={{ marginTop: 10 }}>
               <button name="menu" onClick={() => {
