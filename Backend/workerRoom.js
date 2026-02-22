@@ -127,8 +127,9 @@ function handleInput(msg) {
 
             // Spell stats defined server-side
             const spellStats = {
-                fireball: { speed: 200, damage: 25, aoeRadius: 50 },
-                magic_missile: { speed: 100, damage: 12, aoeRadius: 0 }
+                fireball: { speed: 200, damage: 25, aoeRadius: 50, maxBounces: 0 },
+                magic_missile: { speed: 100, damage: 12, aoeRadius: 0, maxBounces: 0 },
+                bouncing_shot: { speed: 150, damage: 15, aoeRadius: 0, maxBounces: 3 }
             };
             const stats = spellStats[msg.spellName] || spellStats.magic_missile;
 
@@ -141,7 +142,8 @@ function handleInput(msg) {
                 playerId: msg.socketId,
                 speed: stats.speed,
                 damage: stats.damage,
-                aoeRadius: stats.aoeRadius
+                aoeRadius: stats.aoeRadius,
+                bouncesRemaining: stats.maxBounces
             };
             // Notify clients about new projectile
             parentPort.postMessage({ 
@@ -252,24 +254,49 @@ function gameloop() {
         const direction = projectile.spellDirection;
         let dx = direction.x;
         let dy = direction.y;
+
+        const oldX = projectile.x;
+        const oldY = projectile.y;
+        
         projectile.x += dx * projectile.speed * 0.015;
         projectile.y += dy * projectile.speed * 0.015;
 
-        let projectileHit = false;
+        let wallHit = false;
+        let playerHit = false;
+        let hitPlayerId = null;
 
         if (wallCollison({ objectLayers: [map] }, projectile)) {
-            projectileHit = true;
+            wallHit = true;
+
+            projectile.x = oldX;
+            projectile.y = oldY;
+
+            projectile.x += dx * projectile.speed * 0.015;
+            const hitX = wallCollison({ objectLayers: [map] }, projectile);
+            projectile.x = oldX;
+
+            projectile.y += dy * projectile.speed * 0.015;
+            const hitY = wallCollison({ objectLayers: [map] }, projectile);
+            projectile.y = oldY;
+
+            if (hitX) projectile.spellDirection.x = -dx;
+            if (hitY) projectile.spellDirection.y = -dy;
+            if (!hitX && !hitY) {
+                projectile.spellDirection.x = -dx;
+                projectile.spellDirection.y = -dy;
+            }
         }
 
         for (const pid in players) {
             if (ProjectilePlayerCollision(projectile, players[pid])) {
-                if (pid === projectile.playerId || players[pid].alive === false) break;
-                projectileHit = true;
+                if (pid === projectile.playerId || players[pid].alive === false) continue;
+                playerHit = true;
+                hitPlayerId = pid;
                 break;
             }
         }
 
-        if (projectileHit) {
+        if (playerHit && hitPlayerId) {
             const aoeRadius = projectile.aoeRadius || 0;
             const damage = projectile.damage || 10;
 
@@ -299,15 +326,43 @@ function gameloop() {
                     }
                 }
             }
-            // Notify clients about deleted projectile
-            parentPort.postMessage({ 
-                type: 'projectileDeleted', 
-                projectileId: id,
-                x: projectile.x,
-                y: projectile.y,
-                spellName: projectile.spellName
-            });
-            delete backendProjectiles[id];
+
+            if (projectile.bouncesRemaining > 0) {
+                const player = players[hitPlayerId];
+                const reflectDx = projectile.x - player.x;
+                const reflectDy = projectile.y - player.y;
+                const len = Math.hypot(reflectDx, reflectDy);
+                if (len > 0) {
+                    projectile.spellDirection.x = reflectDx / len;
+                    projectile.spellDirection.y = reflectDy / len;
+                }
+            }
+        }
+
+        if (wallHit || playerHit) {
+            if (projectile.bouncesRemaining > 0) {
+                projectile.bouncesRemaining--;
+
+                projectile.x += projectile.spellDirection.x * 2;
+                projectile.y += projectile.spellDirection.y * 2;
+
+                parentPort.postMessage({ 
+                    type: 'projectileBounced', 
+                    projectileId: id,
+                    x: projectile.x,
+                    y: projectile.y,
+                    newDirection: projectile.spellDirection
+                });
+            } else {
+                parentPort.postMessage({ 
+                    type: 'projectileDeleted', 
+                    projectileId: id,
+                    x: projectile.x,
+                    y: projectile.y,
+                    spellName: projectile.spellName
+                });
+                delete backendProjectiles[id];
+            }
             continue;
         }
 

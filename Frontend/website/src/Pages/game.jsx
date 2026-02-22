@@ -215,7 +215,8 @@ export default function Game() {
       const keys = Object.keys(spell_list).filter(k => k !== "magic_missile");
       const key = keys[Math.floor(Math.random() * keys.length)] || "fireball";
       const texture = spell_list[key].texture;
-      return { key, texture };
+      const pickupTexture = spell_list[key].pickupTexture || texture;
+      return { key, texture, pickupTexture };
     }
 
      function getRandomUtilityPickup() {
@@ -243,8 +244,8 @@ export default function Game() {
         active: true,
         type: "spell",
         key: pickup.key,
-        image: create_image(pickup.texture),
-        image_pickup:create_image(fireballPickup)
+        image: create_image(pickup.pickupTexture),
+        image_pickup: create_image(pickup.pickupTexture)
       });
 
        itemRef.current.push({
@@ -418,6 +419,20 @@ export default function Game() {
     }
     socket.on('projectileDeleted', OnProjectileDeleted);
 
+    // Handle projectile bounced (update position and direction)
+    function OnProjectileBounced(projectileId, x, y, newDirection) {
+      if (frontEndProjectiles[projectileId]) {
+        frontEndProjectiles[projectileId].x = x;
+        frontEndProjectiles[projectileId].y = y;
+        const len = Math.hypot(newDirection.x, newDirection.y);
+        if (len > 0) {
+          frontEndProjectiles[projectileId].dx = newDirection.x / len;
+          frontEndProjectiles[projectileId].dy = newDirection.y / len;
+        }
+      }
+    }
+    socket.on('projectileBounced', OnProjectileBounced);
+
     //####SPELLS#############################################################################################
     let direction = {
       x: 0,
@@ -465,8 +480,9 @@ export default function Game() {
                 if (dist < 15) {
                   // Set button 1 icon to this spell
                   if(item.type === "spell"){
-                    
-                  button1IconRef.current = { key: item.key, image: item.image_pickup };
+                    // Un-equip any existing spell when picking up new one
+                    equippedSpellRef.current = null;
+                    button1IconRef.current = { key: item.key, image: item.image_pickup };
           
                   }
                   if(item.type ==="utility"){
@@ -876,6 +892,7 @@ export default function Game() {
       socket.off('map', mapOn);
       socket.off('projectileSpawned', OnProjectileSpawned);
       socket.off('projectileDeleted', OnProjectileDeleted);
+      socket.off('projectileBounced', OnProjectileBounced);
       socket.off("updatePlayers", OnupdatePlayer);
       socket.off("spectatorList");
       socket.off("death",death)

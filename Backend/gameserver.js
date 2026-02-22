@@ -66,6 +66,8 @@ function startRoomWorker(roomName, initialState) {
             io.to(roomName).emit('projectileSpawned', msg.projectileId, msg.projectile);
         } else if (msg.type === 'projectileDeleted') {
             io.to(roomName).emit('projectileDeleted', msg.projectileId, msg.x, msg.y, msg.spellName);
+        } else if (msg.type === 'projectileBounced') {
+            io.to(roomName).emit('projectileBounced', msg.projectileId, msg.x, msg.y, msg.newDirection);
         } else if (msg.type === 'joined') {
             io.sockets.sockets.get(msg.socketId)?.emit('joined', roomName);
         } else if (msg.type === 'error') {

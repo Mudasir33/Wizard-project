@@ -1,5 +1,8 @@
 import fire from "../../Assets/Spells/fireball.gif";
+import fireballPickup from "../../Assets/Spells/fireball_pickup.png";
 import missile from "../../Assets/Spells/missile.png";
+import bouncingShot from "../../Assets/Spells/bouncing_shot.png";
+import bouncingIcon from "../../Assets/Spells/bouncing_icon.png";
 export class Spell {
     constructor(x, y, type, direction) {
         this.x = x;
@@ -8,6 +11,8 @@ export class Spell {
         this.speed  = type.speed;
         this.damage = type.damage;
         this.size   = type.size;
+        this.spinSpeed = type.spinSpeed || 0;
+        this.rotation = 0;
 
         const len = Math.hypot(direction.x, direction.y);
         if (len > 0) {
@@ -33,16 +38,17 @@ export class Spell {
         // Match backend: speed units per second
         this.x += this.dx * this.speed * deltaTime;
         this.y += this.dy * this.speed * deltaTime;
+        this.rotation += this.spinSpeed * deltaTime;
     }
     draw(context, scaleup_constant) {
         if (!this.sprite.loaded) {
             return;
         }
         try {
-            const angle = Math.atan2(this.dy, this.dx);
+            const angle = this.spinSpeed > 0 ? this.rotation : Math.atan2(this.dy, this.dx);
             const drawX = this.x * scaleup_constant;
             const drawY = this.y * scaleup_constant;
-            const size = this.size * scaleup_constant;  // Scale size like player characters
+            const size = this.size * scaleup_constant;
             context.save();
             context.translate(drawX + size / 2, drawY + size / 2);
             context.rotate(angle);
@@ -63,15 +69,25 @@ export class Spell {
 export const spell_list = {
     fireball: {
         texture: fire,
-        speed: 200,  // Match backend speed (units per second)
+        pickupTexture: fireballPickup,
+        speed: 200,
         damage: 25,
         size: 18,
         aoeRadius: 50
     },
     magic_missile: {
         texture: missile,
-        speed: 100,  // Match backend speed (units per second)
+        speed: 100,
         damage: 12,
         size: 12
+    },
+    bouncing_shot: {
+        texture: bouncingShot,
+        pickupTexture: bouncingIcon,
+        speed: 150,
+        damage: 15,
+        size: 14,
+        maxBounces: 3,
+        spinSpeed: 10
     }
 };
