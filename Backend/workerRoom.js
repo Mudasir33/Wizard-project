@@ -18,6 +18,13 @@ const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 
+const ZONE_DURATION = 60_000;
+let zone = {
+  active: false,
+  startTime: 0,
+  duration: ZONE_DURATION,
+};
+
 function handleInput(msg) {
     switch (msg.action) {
         case 'join': {
@@ -92,6 +99,17 @@ function handleInput(msg) {
             } else {
                 ongoing = false;
             }
+            //checks to see if zone should start or not
+            if (ongoing) {
+                    zone.active = true;
+                    zone.startTime = Date.now();   
+                    zone.duration = ZONE_DURATION;
+                    console.log("ZONE STARTED");
+                }
+            if (!ongoing) {
+                    zone.active = false;
+                    console.log("ZONE STOPPED");
+                }
             break;
         }
         case 'movement': {
@@ -115,6 +133,29 @@ function handleInput(msg) {
             }
             break;
         }
+        case 'zone': {
+        const player = players[msg.socketId];
+        if (!player || !player.alive) return;
+
+        // Only damage if client says they are inside the zone
+        if (msg.state === false && ongoing === true) {
+            player.health -= 0.2;
+
+            if (player.health <= 0 && player.alive) {
+            player.alive = false;
+
+            const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+            parentPort.postMessage({ type: 'death', socketId: msg.socketId, placement: aliveplayers.length + 1 });
+
+            if (aliveplayers.length === 1) {
+                const winner = aliveplayers[0];
+                players[winner].alive = false;
+                parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+            }
+            }
+        }
+        break;
+        }        
         case 'spellCast': {
             const player = players[msg.socketId];
             if (!player || player.alive === false) return;
@@ -192,7 +233,12 @@ function handleInput(msg) {
             map,
             items,
             numready,
-            ongoing
+            ongoing,
+            zone: {
+                active: zone.active,
+                startTime: zone.startTime,
+                duration: zone.duration
+                }
         }
     });
 }
@@ -430,7 +476,12 @@ setInterval(() => {
                 map,
                 items,
                 numready,
-                ongoing
+                ongoing,
+                zone: {
+                    active: zone.active,
+                    startTime: zone.startTime,
+                    duration: zone.duration
+                }
             }
         });
         lastState = { ...currentState };

@@ -627,10 +627,13 @@ export default function Game() {
     }
 
 
-
-
-
     //####MAIN GAME LOOP#############################################################################################
+    
+    let zone = null;
+    socket.on('zoneUpdate', (z) => {
+      zone = z;
+   
+    });
     let lastTime = 0;
     function loop(timestamp) {
       if (!gameLoopActive || !map) return;
@@ -742,6 +745,55 @@ export default function Game() {
           projectile.update(deltaTime);
           projectile.draw(ctx, scaleup_constant);
         }
+
+                //checks if player is hit by zone 
+        function isBlue(player, centerW, centerH, smallRadius){
+           //ctx.rect((frontendPlayers[socket.id].x+(frontendPlayers[socket.id].width/2)  )*scaleup_constant,(frontendPlayers[socket.id].y )*scaleup_constant,50,50);
+            const px = (player.x +(player.width/2)) *scaleup_constant ;
+            const py = (player.y +(player.height/2)) * scaleup_constant;
+
+            const dx = px - centerW;
+            const dy = py - centerH;
+            console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
+            
+            return dx * dx + dy * dy <= smallRadius * smallRadius;
+
+        }
+        if (zone.active) {
+
+        const elapsed = Date.now() - zone.startTime;
+        const progress = Math.min(elapsed / zone.duration, 1);   
+        ctx.fillStyle = "rgba(0, 0, 255, 0.5)";
+
+        const mapW = width * TILE_SIZE * scaleup_constant;
+        const mapH = height * TILE_SIZE * scaleup_constant;
+        const centerW = (width * TILE_SIZE * scaleup_constant)/2;
+        const centerH = (height * TILE_SIZE * scaleup_constant)/2;
+        const zoneRadiusWorld = (width * TILE_SIZE) ;
+        const r = zoneRadiusWorld * scaleup_constant;
+
+        ctx.beginPath();
+
+        // Whole map rectangle
+        ctx.rect(0, 0, mapW, mapH);
+        
+        
+        //Shrinks the zone to end
+        smallRadius = r * (1 - progress);
+        if (smallRadius > 0) {
+        // Circle (safe zone)
+        ctx.arc(centerW, centerH, smallRadius, 0, Math.PI * 2);
+
+ 
+        } 
+        ctx.fill("evenodd");
+        const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
+        socket.emit('zone', {state, roomkey});  
+
+        
+
+      }
+    
 
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
         let cameraFocusX, cameraFocusY;

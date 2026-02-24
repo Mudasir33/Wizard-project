@@ -50,7 +50,7 @@ function startRoomWorker(roomName, initialState) {
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
             io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
             io.to(roomName).emit('spawnItems', clonedItems, roomName);
-            
+            io.to(roomName).emit('zoneUpdate', msg.state.zone, roomName);
             if(!msg.state.ongoing || ongoing_change){
                 io.emit("sessions", sessions)
             }
@@ -148,6 +148,11 @@ async function startServer() {
                 roomWorkers[roomkey].postMessage({ type: 'input', action: 'movement', socketId: socket.id, dx, dy, sequenceNumber });
             }
         });
+        socket.on('zone', ({ state, roomkey }) => {
+            if (roomWorkers[roomkey]) {
+                    roomWorkers[roomkey].postMessage({type: 'input',action: 'zone',socketId: socket.id,state});
+            }
+        });        
         socket.on('pickupItem', ({ room, itemId }) => {
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'pickupItem', socketId: socket.id, itemId });
@@ -157,30 +162,6 @@ async function startServer() {
             if (roomWorkers[roomkey]) {
                 roomWorkers[roomkey].postMessage({ type: 'input', action: 'spellCast', socketId: socket.id, spellName, spellDirection, x, y });
             }
-        });
-        socket.on('zone', ({ state, roomkey }) => {
-            const session = sessions[roomkey];
-            const players = session.players;
-
-            const aliveplayers = Object.keys(players).filter(id => players[id].alive)
-
-            if (aliveplayers.length <= 1) return;
-
-            if (!players[socket.id]) { return }
-            if (state == true && players[socket.id].alive) {
-                sessions[roomkey].players[socket.id].health -= 1;
-                sessions[roomkey].players[socket.id].health -= 0.25;
-                endgame(sessions[roomkey].players, socket.id, "zone");
-
-
-
-
-
-
-            }  // Forward to worker if needed
-
-
-
         });
 
         socket.on("update_vel", (vel)=>{
