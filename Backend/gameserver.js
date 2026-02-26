@@ -114,7 +114,7 @@ async function startServer() {
         
 
         socket.on('Game', (room) => {
-            socket.emit('spawnItems', sessions[room]?.items || []);
+            //socket.emit('spawnItems', sessions[room]?.items || []);
             socket.rooms.forEach(r => {
                 if (r !== socket.id && r !== room) {
                     socket.leave(r);
@@ -259,11 +259,23 @@ async function startServer() {
             socket.leave(room);
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'delete_user', socketId: socket.id });
-             
             }
         };
 
+      socket.on("Use_utility", ({util, amount, room})=>{
+
+            if(roomWorkers[room]){
+                roomWorkers[room].postMessage({ type: 'input', action: 'util_use', util: util, amount: amount, socketId: socket.id});
+            }
+      })
       
+       socket.on("remove_util", ({util, amount, room})=>{
+
+            if(roomWorkers[room]){
+                roomWorkers[room].postMessage({ type: 'input', action: 'remove_util', util: util, amount: amount, socketId: socket.id});
+            }
+            
+      })
 
         
 

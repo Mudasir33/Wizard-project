@@ -8,8 +8,6 @@ import { Spell, spell_list } from "../../../game/spells.js";
 import { ExplosionManager } from "../../../game/spell_effects.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
-import haste_potion from "../assets/potion.png";
-import { Socket } from "socket.io-client";
 import Game_death from "./Game_Death.jsx";
 import { Utility, utility_list } from "../../../game/utility.js";
 import { use } from "react";
@@ -376,11 +374,12 @@ export default function Game() {
     }
     const spawnitems = (spawnItems)=> {
       console.log("item spawned:", spawnItems.key)
+
       itemRef.current.push({
         ...spawnItems,
         active: true,
         image: create_image(spawnItems.type==="spell"
-          ?spell_list[spawnItems.key].pickupTexture : utility_list[spawnItems.key].pickupTexture
+          ?spell_list[spawnItems.key].texture : utility_list[spawnItems.key].texture
         ),
         image_pickup: create_image(spawnItems.type==="spell"
            ?spell_list[spawnItems.key].pickupTexture : utility_list[spawnItems.key].pickupTexture
@@ -388,9 +387,6 @@ export default function Game() {
         
       })
     }
-
-
-
 
 
     socket.on("spawnItems", spawnitems)
@@ -467,35 +463,7 @@ export default function Game() {
     const b3Y = spellJoystickY;
 
     function updatePlayer() {
-            /*
-            // Check for item pickup (collision)
-            for (let i = itemRef.current.length - 1; i >= 0; i--) {
-              const item = itemRef.current[i];
-              if (item.active && frontendPlayers[socket.id]) {
-                const player = frontendPlayers[socket.id];
-                const dx = player.x - item.x;
-                const dy = player.y - item.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 15) {
-                  // Set button 1 icon to this spell
-                  if(item.type === "spell"){
-                    // Un-equip any existing spell when picking up new one
-                    equippedSpellRef.current = null;
-                    button1IconRef.current = { key: item.key, image: item.image_pickup };
-          
-                  }
-                  if(item.type ==="utility"){
-          
-                      button3IconRef.current = { key: item.key, image: item.image_pickup };
-                      console.log("button3IconRef:", button3IconRef)
-                      
-
-                  }
-                    itemRef.current.splice(i, 1);
-                }
-              }
-            }
-              */
+       
       let dx = 0,
         dy = 0;
 
@@ -613,15 +581,15 @@ export default function Game() {
     function changehaste(button){
        if (button === 3 && button3IconRef.current) {
       equippedSpellRef.current = button3IconRef.current.key;
-      console.log("haste pressed:", button3IconRef.current.key);
+      console.log("utility pressed:", button3IconRef.current.key,);
       const key = button3IconRef.current.key
       const utility1 = utility_list[key]
     
-        equippedSpellRef.current = button3IconRef.current.key;
-       const util = new  Utility(frontendPlayers[socket.id], utility1 )
-        activeUtilitiesRef.current.push(util);
-        button3IconRef.current = null;
-        equippedSpellRef.current = null;
+      equippedSpellRef.current = button3IconRef.current.key;
+      const util = new  Utility(frontendPlayers[socket.id], utility1, roomkey )
+      activeUtilitiesRef.current.push(util);
+      button3IconRef.current = null;
+      equippedSpellRef.current = null;
 
       }
     }
@@ -672,12 +640,10 @@ export default function Game() {
             cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
             cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
           );
+           //console.log(frontendPlayers[socket.id].health)
           updatePlayer();
           
-        
-
-  
-
+    
 
         }
 
@@ -727,9 +693,11 @@ export default function Game() {
           
         });
         activeUtilitiesRef.current = (activeUtilitiesRef.current || []).filter(util =>{
-          //console.log("update time haste")
+          if(!util.type.instant){
           util.update(deltaTime);
           return util.active;
+          }
+       
         })
 
 
@@ -851,7 +819,20 @@ export default function Game() {
             ctx.restore();
           }
           buttonsRef.current.b2.draw(ctx);
-          buttonsRef.current.b3.draw(ctx);
+
+          if (button3IconRef.current && button3IconRef.current.image) {
+            const btn = buttonsRef.current.b3;
+            const iconSize = btn.r * 2;
+            ctx.save();
+            ctx.drawImage(
+              button3IconRef.current.image,
+              btn.x - btn.r,
+              btn.y - btn.r,
+              iconSize,
+              iconSize
+            );
+            ctx.restore();
+          }
         }
 
         ctx.drawImage(c,0,0);

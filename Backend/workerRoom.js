@@ -10,21 +10,21 @@ let items = initialState.items ? JSON.parse(JSON.stringify(initialState.items)) 
 let map = initialState.map ? JSON.parse(JSON.stringify(initialState.map)) : null;
 let numready = initialState.numready || 0;
 let ongoing = initialState.ongoing || false;
-
+const playerbase_speed = 100;
 let itemSpawninterval = null;
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 const spellkeys = ["fireball", "bouncing_shot"]
-const utilitykeys = ["haste"]
+const utilitykeys = ["haste", "health"]
 const TILE_SIZE = 16;
 let spawn_x = 50;
-
+const basespeed = 200;
 let mapwidth = null;
 let mapheight = null;
 const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 
-const ZONE_DURATION = 60_000;
+const ZONE_DURATION = 60_00000000000000000000;
 let zone = {
   active: false,
   startTime: 0,
@@ -217,6 +217,39 @@ function handleInput(msg) {
             });
             break;
         }
+
+        case 'util_use': {
+              const player = players[msg.socketId];
+              console.log("player speed:", player.speed )
+              if(msg.util === "health"){
+                console.log("before:", player.health)
+                player.health += msg.amount;
+                if(player.health > 100){
+                    player.health = 100;
+                }
+                console.log("after:", player.health)
+              }
+
+              if(msg.util == "haste"){
+                  player.speed = player.speed * 3;
+              }
+            
+
+        }
+
+        case 'remove_util': {
+                     const player = players[msg.socketId];
+                    if(msg.util == "haste"){
+                         player.speed = basespeed;
+              }
+        }
+
+
+
+
+
+
+
         case 'keyup': {
             if (!playerInput[msg.socketId]) return;
             if (msg.key == 'KeyW' || msg.key == 'KeyS') playerInput[msg.socketId].dy = 0;
