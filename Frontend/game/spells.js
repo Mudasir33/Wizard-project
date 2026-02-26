@@ -77,6 +77,7 @@ export const spell_list = {
     },
     magic_missile: {
         texture: missile,
+        pickupTexture: missile,
         speed: 100,
         damage: 12,
         size: 12

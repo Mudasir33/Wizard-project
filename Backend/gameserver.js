@@ -49,7 +49,7 @@ function startRoomWorker(roomName, initialState) {
             sessions[roomName].ongoing = msg.state.ongoing;
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
             io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
-            io.to(roomName).emit('spawnItems', clonedItems, roomName);
+            //io.to(roomName).emit('spawnItems', clonedItems, roomName);
             io.to(roomName).emit('zoneUpdate', msg.state.zone, roomName);
             if(!msg.state.ongoing || ongoing_change){
                 io.emit("sessions", sessions)
@@ -77,6 +77,14 @@ function startRoomWorker(roomName, initialState) {
         } else if (msg.type === 'winner') {
             io.sockets.sockets.get(msg.socketId)?.emit('winner', msg.placement);
         }
+        else if (msg.type === 'spawnItems'){
+            //console.log("parentport spawn item:", msg.item)
+            io.to(roomName).emit("spawnItems", msg.item)
+        }
+          else if (msg.type === 'removeItem'){
+            console.log("remove item gameserver:", msg.item)
+            io.to(roomName).emit("removeItem", msg.item)
+        }
      
 
     });
@@ -102,7 +110,8 @@ app.use(express.static('Public'));
 async function startServer() {
     const Map2d = await mapCreation();
     io.on('connection', (socket) => {
-
+        
+        
 
         socket.on('Game', (room) => {
             socket.emit('spawnItems', sessions[room]?.items || []);
@@ -113,9 +122,15 @@ async function startServer() {
             });
             socket.join(room);
             const clonedMap = JSON.parse(JSON.stringify(Map2d));
-            sessions[room].map = clonedMap;
+            sessions[room].map = clonedMap
             if (roomWorkers[room]) {
-                roomWorkers[room].postMessage({ type: 'set_map', map: JSON.parse(JSON.stringify(clonedMap.objectLayers[0])) });
+                console.log(clonedMap.layers[0].height)
+                roomWorkers[room].postMessage({ type: 'set_map', 
+                        map: JSON.parse(JSON.stringify(clonedMap.objectLayers[0])),
+                        mapwidth: clonedMap.layers[0].grid[0].length,
+                        mapheight: clonedMap.layers[0].grid.length
+                    });
+           
             }
             // Send gameRoom to all players and spectators in the room
             io.to(room).emit('gameRoom', room);

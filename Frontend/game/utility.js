@@ -38,7 +38,7 @@ export class Utility {
     }
     update(dt) {
         if (!this.active) return;
-        console.log(this.timer)
+        //console.log(this.timer)
         this.timer += dt;
         if (this.timer >= this.duration) {
             console.log("remove haste")
@@ -50,9 +50,10 @@ export class Utility {
 export const utility_list = {
     haste: {
         name: "haste",
-        duration: 1,
+        duration: 5,
         amount: 300,
         instant: false,
-        texture: yellow_potion
+        texture: yellow_potion,
+        pickupTexture: yellow_potion
     }
 };

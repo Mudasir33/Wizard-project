@@ -11,9 +11,15 @@ let map = initialState.map ? JSON.parse(JSON.stringify(initialState.map)) : null
 let numready = initialState.numready || 0;
 let ongoing = initialState.ongoing || false;
 
+let itemSpawninterval = null;
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
+const spellkeys = ["fireball", "bouncing_shot"]
+const utilitykeys = ["haste"]
+const TILE_SIZE = 16;
 let spawn_x = 50;
 
+let mapwidth = null;
+let mapheight = null;
 const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
@@ -78,6 +84,8 @@ function handleInput(msg) {
                 ongoing = false;
                 numready = 0;
                 items = [];
+                clearInterval(itemSpawninterval);
+                itemSpawninterval = null;
             }
 
             break;
@@ -96,8 +104,20 @@ function handleInput(msg) {
             const numplayers = Object.keys(players).length;
             if (numready / numplayers >= 0.51 && numplayers >= 2) {
                 ongoing = true;
-            } else {
+                if(ongoing && !itemSpawninterval){
+                    itemSpawninterval = setInterval(() => {
+                        spawnItems();
+                    }, 3000);
+
+                }
+            } 
+            else {
                 ongoing = false;
+                  
+                
+            if(!ongoing && itemSpawninterval){
+                    clearInterval(temSpawninterval)
+                    itemSpawninterval = null;}
             }
             //checks to see if zone should start or not
             if (ongoing) {
@@ -112,6 +132,7 @@ function handleInput(msg) {
                 }
             break;
         }
+    
         case 'movement': {
             if (!playerInput[msg.socketId] || !players[msg.socketId]) return;
             players[msg.socketId].sequenceNumber = msg.sequenceNumber;
@@ -121,6 +142,8 @@ function handleInput(msg) {
             players[msg.socketId].dy = msg.dy;
             break;
         }
+   
+
         case 'pickupItem': {
             const idx = items.findIndex(item => item.id === msg.itemId);
             if (idx !== -1) {
@@ -290,6 +313,11 @@ function gameloop() {
                 player.y + 15 > item.y
             ) {
                 items.splice(i, 1);
+                console.log("remove item picup worker:", item)
+                parentPort.postMessage({
+                    type: "removeItem", 
+                    item: item
+                })
                 if (!player.abilities) player.abilities = [];
                 player.abilities.push(item.type);
             }
@@ -418,6 +446,8 @@ function gameloop() {
         activeeffects[effectid].applyeffect(players, activeeffects[effectid].effect);
     }
 
+    
+
     //run environmental effects
 
 }
@@ -430,14 +460,59 @@ setInterval(() => {
     if (windscounter == 0) {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
         windscounter++;
-        console.log("created wind");
+        //console.log("created wind");
     } else if (windscounter == 1){
         activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
     }
     num++;
-    console.log(activeeffects);
+    //console.log(activeeffects);
 }, 10000);
+
+
+function getRandomWalkableTile() {
+   
+      if (!mapheight || !mapwidth) return { x: 5, y: 5 };
+        const x = Math.floor(Math.random() * mapwidth)
+        const y = Math.floor(Math.random() * mapheight)
+      return { x, y };
+    }
+
+
+let itemIDcounter = 0;
+
+function spawnItems(){
+   
+    if(!map) return;
+
+    console.log("items spaqwnd backend")
+    const pos = getRandomWalkableTile();
+    console.log("postion item spawn:", pos)
+    const isspell = Math.random() >= 0.5;
+
+    const key = isspell
+        ?spellkeys[Math.floor(Math.random() *spellkeys.length)]
+        : utilitykeys[Math.floor(Math.random() * utilitykeys.length)]
+
+    const item = {
+        id : itemIDcounter++,
+        x: pos.x * TILE_SIZE + TILE_SIZE /2,
+        y: pos.y * TILE_SIZE + TILE_SIZE /2,
+        type: isspell ? "spell" : "utility",
+        key
+    }
+    //console.log("workerroom item spawn:", item)
+    items.push(item)
+    parentPort.postMessage({type: "spawnItems", item})
+}
+
+
+    
+
+
+
+
+
 
 
 setInterval(() => {
@@ -493,7 +568,11 @@ parentPort.on('message', (msg) => {
         handleInput(msg);
     } else if (msg.type === 'set_map') {
         map = msg.map;
-    } else if (msg.type === 'shutdown') {
+        console.log("map witdth:", msg.mapwidth)
+        mapwidth = msg.mapwidth;
+        mapheight = msg.mapheight;
+            } else if (msg.type === 'shutdown') {
         process.exit(0);
     }
+
 });

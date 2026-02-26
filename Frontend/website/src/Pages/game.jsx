@@ -191,79 +191,15 @@ export default function Game() {
     let startTime = startTimeRef.current;
 
     // Helper: get random walkable tile
-    function getRandomWalkableTile() {
-      if (!map || !map.layers || !map.layers[0] || !map.layers[0].grid) return { x: 5, y: 5 };
-      const grid = map.layers[0].grid;
-      const height = grid.length;
-      const width = grid[0].length;
-      let tries = 0;
-      while (tries < 100) {
-        const x = Math.floor(Math.random() * width);
-        const y = Math.floor(Math.random() * height);
-        // Assume walkable if id is not 0/null (customize as needed)
-        if (grid[y][x] && grid[y][x].id !== 0) {
-          return { x, y };
-        }
-        tries++;
-      }
-      return { x: 5, y: 5 };
-    }
+    
 
     // Spawn item every 10 seconds
     // Only spawn spell_list pickups (not magic_missile)
-    function getRandomSpellPickup() {
-      const keys = Object.keys(spell_list).filter(k => k !== "magic_missile");
-      const key = keys[Math.floor(Math.random() * keys.length)] || "fireball";
-      const texture = spell_list[key].texture;
-      const pickupTexture = spell_list[key].pickupTexture || texture;
-      return { key, texture, pickupTexture };
-    }
 
-     function getRandomUtilityPickup() {
-      const keys = Object.keys(utility_list)
-      const key = keys[Math.floor(Math.random() * keys.length)] || "haste";
-      const texture = utility_list[key].texture;
-      return { key, texture };
-    }
 
-    function create_image(src){
-        const img = new Image();
-        img.src = src;
-        return img;
-    }
 
-    function spawnItem() {
-      if (!map) return;
-      const pos = getRandomWalkableTile();
-      const pos1 = getRandomWalkableTile();
-      const pickup = getRandomSpellPickup();
-      const utility_pickup = getRandomUtilityPickup();
-      itemRef.current.push({
-        x: pos.x * TILE_SIZE + TILE_SIZE / 2,
-        y: pos.y * TILE_SIZE + TILE_SIZE / 2,
-        active: true,
-        type: "spell",
-        key: pickup.key,
-        image: create_image(pickup.pickupTexture),
-        image_pickup: create_image(pickup.pickupTexture)
-      });
+  
 
-       itemRef.current.push({
-        x: pos1.x * TILE_SIZE + TILE_SIZE / 2,
-        y: pos1.y * TILE_SIZE + TILE_SIZE / 2,
-        active: true,
-        type: "utility",
-        key: utility_pickup.key,
-        image: create_image(utility_pickup.texture),
-        image_pickup: create_image(utility_pickup.texture)
-      });
-
-    }
-    const itemSpawnInterval = setInterval(() => {
-      if (map) {
-        spawnItem();
-      }
-    }, 10000);
 
     function mapOn(loadmap) {
       map = loadmap;
@@ -433,6 +369,68 @@ export default function Game() {
     }
     socket.on('projectileBounced', OnProjectileBounced);
 
+      function create_image(src){
+        const img = new Image();
+        img.src = src;
+        return img;
+    }
+    const spawnitems = (spawnItems)=> {
+      console.log("item spawned:", spawnItems.key)
+      itemRef.current.push({
+        ...spawnItems,
+        active: true,
+        image: create_image(spawnItems.type==="spell"
+          ?spell_list[spawnItems.key].pickupTexture : utility_list[spawnItems.key].pickupTexture
+        ),
+        image_pickup: create_image(spawnItems.type==="spell"
+           ?spell_list[spawnItems.key].pickupTexture : utility_list[spawnItems.key].pickupTexture
+        )
+        
+      })
+    }
+
+
+
+
+
+    socket.on("spawnItems", spawnitems)
+
+    const removeitem =(removed_item)=>
+    {
+      console.log("remove item frontend", removed_item)
+      // need to make it so it get pickuped
+       //console.log("item frontend befor remove :", itemRef.current)
+      let current_item = itemRef.current.find(item => item.id === removed_item.id);
+      //console.log(current_item);
+      
+      itemRef.current = itemRef.current.filter(item => item.id !== removed_item.id)
+          // console.log("item frontend after remove :", itemRef.current)
+       // need to make it so it get pickuped
+             if(current_item.type === "spell"){
+                    // Un-equip any existing spell when picking up new one
+                    equippedSpellRef.current = null;
+                    button1IconRef.current = { key: current_item.key, image: current_item.image_pickup };
+          
+                  }
+                  if(current_item.type ==="utility"){
+          
+                      button3IconRef.current = { key: current_item.key, image: current_item.image_pickup };
+                      console.log("button3IconRef:", button3IconRef)
+                      
+
+                  }
+                 
+                
+    }
+
+
+
+    
+    
+    socket.on("removeItem", removeitem)
+
+
+  
     //####SPELLS#############################################################################################
     let direction = {
       x: 0,
@@ -469,6 +467,7 @@ export default function Game() {
     const b3Y = spellJoystickY;
 
     function updatePlayer() {
+            /*
             // Check for item pickup (collision)
             for (let i = itemRef.current.length - 1; i >= 0; i--) {
               const item = itemRef.current[i];
@@ -496,6 +495,7 @@ export default function Game() {
                 }
               }
             }
+              */
       let dx = 0,
         dy = 0;
 
@@ -727,7 +727,7 @@ export default function Game() {
           
         });
         activeUtilitiesRef.current = (activeUtilitiesRef.current || []).filter(util =>{
-          console.log("update time haste")
+          //console.log("update time haste")
           util.update(deltaTime);
           return util.active;
         })
@@ -754,7 +754,7 @@ export default function Game() {
 
             const dx = px - centerW;
             const dy = py - centerH;
-            console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
+            //console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
 
@@ -949,8 +949,10 @@ export default function Game() {
       socket.off("spectatorList");
       socket.off("death",death)
       socket.off("winner", winner)
-      clearInterval(itemSpawnInterval);
       canvas.removeEventListener('click', handleCanvasClick);
+      
+    socket.off("spawnItems", spawnitems)
+    socket.off("removeItem", removeitem)
       explosionManagerRef.current.clear(); // Clean up DOM elements
     };
   }, [])
