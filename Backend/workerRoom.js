@@ -143,7 +143,6 @@ function handleInput(msg) {
             break;
         }
    
-
         case 'pickupItem': {
             const idx = items.findIndex(item => item.id === msg.itemId);
             if (idx !== -1) {
@@ -233,8 +232,7 @@ function handleInput(msg) {
               if(msg.util == "haste"){
                   player.speed = player.speed * 3;
               }
-            
-
+              break;
         }
 
         case 'remove_util': {
@@ -242,13 +240,8 @@ function handleInput(msg) {
                     if(msg.util == "haste"){
                          player.speed = basespeed;
               }
+              break;
         }
-
-
-
-
-
-
 
         case 'keyup': {
             if (!playerInput[msg.socketId]) return;
@@ -299,7 +292,6 @@ function handleInput(msg) {
     });
 }
 
-
 function gameloop() {
     // Defensive: Only run if map is set and valid
     if (!map || !map.obj) return;
@@ -346,7 +338,7 @@ function gameloop() {
                 player.y + 15 > item.y
             ) {
                 items.splice(i, 1);
-                console.log("remove item picup worker:", item)
+                console.log("remove item pickup worker:", item)
                 parentPort.postMessage({
                     type: "removeItem", 
                     item: item
@@ -478,11 +470,6 @@ function gameloop() {
         // console.log(activeeffects[effectid].effect);
         activeeffects[effectid].applyeffect(players, activeeffects[effectid].effect);
     }
-
-    
-
-    //run environmental effects
-
 }
 
 let activeeffects = {};
@@ -493,13 +480,13 @@ setInterval(() => {
     if (windscounter == 0) {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
         windscounter++;
-        //console.log("created wind");
+        console.log("created wind");
     } else if (windscounter == 1){
         activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
     }
     num++;
-    //console.log(activeeffects);
+    console.log(activeeffects);
 }, 10000);
 
 
@@ -511,16 +498,14 @@ function getRandomWalkableTile() {
       return { x, y };
     }
 
-
 let itemIDcounter = 0;
 
 function spawnItems(){
-   
     if(!map) return;
 
-    console.log("items spaqwnd backend")
+    console.log("items spawned backend")
     const pos = getRandomWalkableTile();
-    console.log("postion item spawn:", pos)
+    console.log("position item spawn:", pos)
     const isspell = Math.random() >= 0.5;
 
     const key = isspell
@@ -538,15 +523,6 @@ function spawnItems(){
     items.push(item)
     parentPort.postMessage({type: "spawnItems", item})
 }
-
-
-    
-
-
-
-
-
-
 
 setInterval(() => {
     gameloop();
@@ -601,11 +577,10 @@ parentPort.on('message', (msg) => {
         handleInput(msg);
     } else if (msg.type === 'set_map') {
         map = msg.map;
-        console.log("map witdth:", msg.mapwidth)
+        console.log("map width:", msg.mapwidth)
         mapwidth = msg.mapwidth;
         mapheight = msg.mapheight;
             } else if (msg.type === 'shutdown') {
         process.exit(0);
     }
-
 });
