@@ -188,17 +188,6 @@ export default function Game() {
     const duration = 60000;
     let startTime = startTimeRef.current;
 
-    // Helper: get random walkable tile
-    
-
-    // Spawn item every 10 seconds
-    // Only spawn spell_list pickups (not magic_missile)
-
-
-
-  
-
-
     function mapOn(loadmap) {
       map = loadmap;
       gameLoopActive = true;
@@ -211,11 +200,9 @@ export default function Game() {
 
     function OnupdatePlayer(backendPlayers, room) {
 
-
       for (const id in backendPlayers) {
         const backendPlayer = backendPlayers[id];
         //console.log(backendPlayer);
-
 
         if (!frontendPlayers[id]) {
           frontendPlayers[id] = new Player(backendPlayer.x, backendPlayer.y, backendPlayer.color);
@@ -226,7 +213,6 @@ export default function Game() {
           frontendPlayers[id].alive = backendPlayer.alive;
           frontendPlayers[id].dx = backendPlayer.dx;
           frontendPlayers[id].dy = backendPlayer.dy;
-
 
           if (id === socket.id) {
             // Update existing player position
@@ -283,7 +269,6 @@ export default function Game() {
         setIsSpectating(true);
       }
     });
-
 
     const keys = keysRef.current;
     //maybe needs to be closed after a render?
@@ -388,7 +373,6 @@ export default function Game() {
       })
     }
 
-
     socket.on("spawnItems", spawnitems)
 
     const removeitem =(removed_item)=>
@@ -406,27 +390,14 @@ export default function Game() {
                     // Un-equip any existing spell when picking up new one
                     equippedSpellRef.current = null;
                     button1IconRef.current = { key: current_item.key, image: current_item.image_pickup };
-          
                   }
                   if(current_item.type ==="utility"){
-          
-                      button3IconRef.current = { key: current_item.key, image: current_item.image_pickup };
-                      console.log("button3IconRef:", button3IconRef)
-                      
-
+                    button3IconRef.current = { key: current_item.key, image: current_item.image_pickup };
+                    console.log("button3IconRef:", button3IconRef)
                   }
-                 
-                
     }
-
-
-
-    
-    
     socket.on("removeItem", removeitem)
 
-
-  
     //####SPELLS#############################################################################################
     let direction = {
       x: 0,
@@ -521,7 +492,6 @@ export default function Game() {
         socket.emit('movement', { dx, dy, sequenceNumber, roomkey });
       }
 
-
       // Update spell direction from right joystick FIRST
       direction.x = spellJoystickRef.current.dx;
       direction.y = spellJoystickRef.current.dy;
@@ -531,9 +501,6 @@ export default function Game() {
         lastValidDirection.x = spellJoystickRef.current.dx;
         lastValidDirection.y = spellJoystickRef.current.dy;
       }
-
-      // Log right joystick state for debugging
-      
 
       // SAVE direction BEFORE state change happens
       if (previous_state == true && spellJoystickRef.current.isPressed == false) {
@@ -548,10 +515,6 @@ export default function Game() {
         console.log("SHOOT TRIGGERED! Direction:", lastValidDirection, "Spell:", spellToCast);
         spellCreate(spellToCast, lastValidDirection, roomkey);
       }
-
-     
-        
-      
 
       // Update state AFTER we process the release
       previous_state = spellJoystickRef.current.isPressed;
@@ -593,7 +556,6 @@ export default function Game() {
 
       }
     }
-
 
     //####MAIN GAME LOOP#############################################################################################
     
@@ -642,11 +604,7 @@ export default function Game() {
           );
            //console.log(frontendPlayers[socket.id].health)
           updatePlayer();
-          
-    
-
         }
-
 
         const height = map.layers[0]?.grid?.length || 0;
         const width = map.layers[0]?.grid?.[0]?.length || 0;
@@ -700,8 +658,6 @@ export default function Game() {
        
         })
 
-
-
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
           player.draw(ctx, scaleup_constant);
@@ -714,7 +670,7 @@ export default function Game() {
           projectile.draw(ctx, scaleup_constant);
         }
 
-                //checks if player is hit by zone 
+        //checks if player is hit by zone 
         function isBlue(player, centerW, centerH, smallRadius){
            //ctx.rect((frontendPlayers[socket.id].x+(frontendPlayers[socket.id].width/2)  )*scaleup_constant,(frontendPlayers[socket.id].y )*scaleup_constant,50,50);
             const px = (player.x +(player.width/2)) *scaleup_constant ;
@@ -725,7 +681,6 @@ export default function Game() {
             //console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
-
         }
         if (zone.active) {
 
@@ -744,25 +699,18 @@ export default function Game() {
 
         // Whole map rectangle
         ctx.rect(0, 0, mapW, mapH);
-        
-        
+
         //Shrinks the zone to end
         smallRadius = r * (1 - progress);
         if (smallRadius > 0) {
         // Circle (safe zone)
         ctx.arc(centerW, centerH, smallRadius, 0, Math.PI * 2);
-
- 
         } 
         ctx.fill("evenodd");
         const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
         socket.emit('zone', {state, roomkey});  
-
-        
-
       }
     
-
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
         let cameraFocusX, cameraFocusY;
         if (isSpectatingRef.current) {
@@ -833,6 +781,95 @@ export default function Game() {
             );
             ctx.restore();
           }
+
+          // Draw spell info popup when holding button 1
+          if (buttonsRef.current.b1.isHolding() && button1IconRef.current) {
+            const spellKey = button1IconRef.current.key;
+            const spellData = spell_list[spellKey];
+            if (spellData) {
+              const btn = buttonsRef.current.b1;
+              const popupWidth = 180;
+              const popupHeight = 100;
+              const popupX = btn.x - popupWidth - 20;
+              const popupY = btn.y - popupHeight / 2;
+              
+              // Draw popup background
+              ctx.save();
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.roundRect(popupX, popupY, popupWidth, popupHeight, 8);
+              ctx.fill();
+              ctx.stroke();
+              
+              // Draw spell name
+              ctx.fillStyle = '#FFD700';
+              ctx.font = 'bold 14px Arial';
+              ctx.textAlign = 'left';
+              ctx.fillText(spellData.name || spellKey, popupX + 10, popupY + 20);
+              
+              // Draw stats
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = '12px Arial';
+              ctx.fillText(`Damage: ${spellData.damage}`, popupX + 10, popupY + 40);
+              ctx.fillText(`Speed: ${spellData.speed}`, popupX + 10, popupY + 55);
+              
+              // Draw description
+              ctx.fillStyle = '#AAAAAA';
+              ctx.font = '11px Arial';
+              const desc = spellData.description || '';
+              ctx.fillText(desc, popupX + 10, popupY + 75, popupWidth - 20);
+              
+              ctx.restore();
+            }
+          }
+
+          // Draw utility info popup when holding button 3
+          if (buttonsRef.current.b3.isHolding() && button3IconRef.current) {
+            const utilKey = button3IconRef.current.key;
+            const utilData = utility_list[utilKey];
+            if (utilData) {
+              const btn = buttonsRef.current.b3;
+              const popupWidth = 180;
+              const popupHeight = 90;
+              const popupX = btn.x - popupWidth - 20;
+              const popupY = btn.y - popupHeight / 2;
+              
+              // Draw popup background
+              ctx.save();
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.roundRect(popupX, popupY, popupWidth, popupHeight, 8);
+              ctx.fill();
+              ctx.stroke();
+              
+              // Draw utility name
+              ctx.fillStyle = '#00FF88';
+              ctx.font = 'bold 14px Arial';
+              ctx.textAlign = 'left';
+              ctx.fillText(utilData.displayName || utilKey, popupX + 10, popupY + 20);
+              
+              // Draw stats
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = '12px Arial';
+              if (utilData.instant) {
+                ctx.fillText(`Amount: +${utilData.amount}`, popupX + 10, popupY + 40);
+              } else {
+                ctx.fillText(`Duration: ${utilData.duration}s`, popupX + 10, popupY + 40);
+              }
+              
+              // Draw description
+              ctx.fillStyle = '#AAAAAA';
+              ctx.font = '11px Arial';
+              const desc = utilData.description || '';
+              ctx.fillText(desc, popupX + 10, popupY + 60, popupWidth - 20);
+              
+              ctx.restore();
+            }
+          }
         }
 
         ctx.drawImage(c,0,0);
@@ -865,9 +902,6 @@ export default function Game() {
           // Store button bounds for click detection
           canvasRef.current.exitSpectateButton = { x: buttonX, y: buttonY, width: buttonWidth, height: buttonHeight };
         }
-
-        //requestAnimationFrame(loop)
-        
       } catch (error) {
         console.error("Error in loop:", error);
       }
@@ -877,7 +911,6 @@ export default function Game() {
 
     setInterval(() => {
       requestAnimationFrame(loop);
-      
       // console.log("inputs:", playerInputs);
     }, 15);
 

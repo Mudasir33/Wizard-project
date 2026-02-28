@@ -11,11 +11,9 @@ export class Utility {
         this.type = type;
         this.room = room;
         
-
         this.active = true;
         this.timer = 0;
         
-
         if (type.instant) {
             this.applyInstant(room);
             this.active = false;
@@ -29,25 +27,21 @@ export class Utility {
         if (this.type.name === "haste") {
            socket.emit("Use_utility", ({util: this.type.name, amount: this.amount, room: this.room}));   
         }
-       
     }
 
     applyInstant(){
           if (this.type.name === "health") {
                socket.emit("Use_utility", ({util: this.type.name, amount: this.amount, room: this.room}));   
             }
-
          this.active = false;
     }
 
     remove(){
         if (this.type.name === "haste") {
                 console.log("remove haste, speed:", this.player.speed
-            
                 )
                 socket.emit("remove_util", ({util: this.type.name, amount: this.amount, room: this.room}));   
         }
-        //health dont need to change just say active is off
         this.active = false;
     }
     update(dt) {
@@ -64,6 +58,8 @@ export class Utility {
 export const utility_list = {
     haste: {
         name: "haste",
+        displayName: "Haste",
+        description: "Triples movement speed for 5 seconds",
         duration: 5,
         amount: 3,
         instant: false,
@@ -72,6 +68,8 @@ export const utility_list = {
     },
     health:{
         name: "health",
+        displayName: "Heal",
+        description: "Instantly restores 50 health",
         duration: 1,
         amount: 50,
         instant: true,
