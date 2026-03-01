@@ -9,7 +9,14 @@ export class Button{
         this.onclick = onclick;
         this.isPressed = false;
         this.canvas = null;
-        this.touchId = null;  // Track which touch is pressing this button
+        this.touchId = null;
+        this.holdStartTime = 0;
+        this.holdThreshold = 300;
+    }
+
+    isHolding() {
+        if (!this.isPressed) return false;
+        return (Date.now() - this.holdStartTime) >= this.holdThreshold;
     }
 
     draw(context) {
@@ -49,7 +56,8 @@ export class Button{
                 if (this.isTouchInArea(px, py)) {
                     this.touchId = touch.identifier;
                     this.isPressed = true;
-                    if (this.onclick) this.onclick();
+                    this.holdStartTime = Date.now();
+                    // Don't call onclick here - wait for touchend to distinguish tap vs hold
                     console.log("button: ", this.name, "pressed");
                     break;
                 }
@@ -66,6 +74,11 @@ export class Button{
                 }
             }
             if (!touchExists && this.touchId !== null) {
+                const holdDuration = Date.now() - this.holdStartTime;
+                if (holdDuration < this.holdThreshold && this.onclick) {
+                    this.onclick();
+                    console.log("button: ", this.name, "activated (quick tap)");
+                }
                 this.isPressed = false;
                 this.touchId = null;
             }

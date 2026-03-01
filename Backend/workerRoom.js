@@ -10,15 +10,21 @@ let items = initialState.items ? JSON.parse(JSON.stringify(initialState.items)) 
 let map = initialState.map ? JSON.parse(JSON.stringify(initialState.map)) : null;
 let numready = initialState.numready || 0;
 let ongoing = initialState.ongoing || false;
-
+const playerbase_speed = 100;
+let itemSpawninterval = null;
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
+const spellkeys = ["fireball", "bouncing_shot"]
+const utilitykeys = ["haste", "health"]
+const TILE_SIZE = 16;
 let spawn_x = 50;
-
+const basespeed = 200;
+let mapwidth = null;
+let mapheight = null;
 const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 
-const ZONE_DURATION = 60_000;
+const ZONE_DURATION = 60_00000000000000000000;
 let zone = {
   active: false,
   startTime: 0,
@@ -90,6 +96,8 @@ function handleInput(msg) {
                 ongoing = false;
                 numready = 0;
                 items = [];
+                clearInterval(itemSpawninterval);
+                itemSpawninterval = null;
             }
 
             break;
@@ -108,8 +116,20 @@ function handleInput(msg) {
             const numplayers = Object.keys(players).length;
             if (numready / numplayers >= 0.51 && numplayers >= 2) {
                 ongoing = true;
-            } else {
+                if(ongoing && !itemSpawninterval){
+                    itemSpawninterval = setInterval(() => {
+                        spawnItems();
+                    }, 3000);
+
+                }
+            } 
+            else {
                 ongoing = false;
+                  
+                
+            if(!ongoing && itemSpawninterval){
+                    clearInterval(temSpawninterval)
+                    itemSpawninterval = null;}
             }
             //checks to see if zone should start or not
             if (ongoing) {
@@ -124,6 +144,7 @@ function handleInput(msg) {
                 }
             break;
         }
+    
         case 'movement': {
             if (!playerInput[msg.socketId] || !players[msg.socketId]) return;
             players[msg.socketId].sequenceNumber = msg.sequenceNumber;
@@ -133,6 +154,7 @@ function handleInput(msg) {
             players[msg.socketId].dy = msg.dy;
             break;
         }
+   
         case 'pickupItem': {
             const idx = items.findIndex(item => item.id === msg.itemId);
             if (idx !== -1) {
@@ -206,6 +228,33 @@ function handleInput(msg) {
             });
             break;
         }
+
+        case 'util_use': {
+              const player = players[msg.socketId];
+              console.log("player speed:", player.speed )
+              if(msg.util === "health"){
+                console.log("before:", player.health)
+                player.health += msg.amount;
+                if(player.health > 100){
+                    player.health = 100;
+                }
+                console.log("after:", player.health)
+              }
+
+              if(msg.util == "haste"){
+                  player.speed = player.speed * 3;
+              }
+              break;
+        }
+
+        case 'remove_util': {
+                     const player = players[msg.socketId];
+                    if(msg.util == "haste"){
+                         player.speed = basespeed;
+              }
+              break;
+        }
+
         case 'keyup': {
             if (!playerInput[msg.socketId]) return;
             if (msg.key == 'KeyW' || msg.key == 'KeyS') playerInput[msg.socketId].dy = 0;
@@ -255,7 +304,6 @@ function handleInput(msg) {
     });
 }
 
-
 function gameloop() {
     // Defensive: Only run if map is set and valid
     if (!map || !map.obj) return;
@@ -302,6 +350,11 @@ function gameloop() {
                 player.y + 15 > item.y
             ) {
                 items.splice(i, 1);
+                console.log("remove item pickup worker:", item)
+                parentPort.postMessage({
+                    type: "removeItem", 
+                    item: item
+                })
                 if (!player.abilities) player.abilities = [];
                 player.abilities.push(item.type);
             }
@@ -429,9 +482,6 @@ function gameloop() {
         // console.log(activeeffects[effectid].effect);
         activeeffects[effectid].applyeffect(players, activeeffects[effectid].effect);
     }
-
-    //run environmental effects
-
 }
 
 let activeeffects = {};
@@ -451,6 +501,40 @@ setInterval(() => {
     //console.log(activeeffects);
 }, 10000);
 
+
+function getRandomWalkableTile() {
+   
+      if (!mapheight || !mapwidth) return { x: 5, y: 5 };
+        const x = Math.floor(Math.random() * mapwidth)
+        const y = Math.floor(Math.random() * mapheight)
+      return { x, y };
+    }
+
+let itemIDcounter = 0;
+
+function spawnItems(){
+    if(!map) return;
+
+    console.log("items spawned backend")
+    const pos = getRandomWalkableTile();
+    console.log("position item spawn:", pos)
+    const isspell = Math.random() >= 0.5;
+
+    const key = isspell
+        ?spellkeys[Math.floor(Math.random() *spellkeys.length)]
+        : utilitykeys[Math.floor(Math.random() * utilitykeys.length)]
+
+    const item = {
+        id : itemIDcounter++,
+        x: pos.x * TILE_SIZE + TILE_SIZE /2,
+        y: pos.y * TILE_SIZE + TILE_SIZE /2,
+        type: isspell ? "spell" : "utility",
+        key
+    }
+    //console.log("workerroom item spawn:", item)
+    items.push(item)
+    parentPort.postMessage({type: "spawnItems", item})
+}
 
 setInterval(() => {
     gameloop();
@@ -505,7 +589,10 @@ parentPort.on('message', (msg) => {
         handleInput(msg);
     } else if (msg.type === 'set_map') {
         map = msg.map;
-    } else if (msg.type === 'shutdown') {
+        console.log("map width:", msg.mapwidth)
+        mapwidth = msg.mapwidth;
+        mapheight = msg.mapheight;
+            } else if (msg.type === 'shutdown') {
         process.exit(0);
     }
 });

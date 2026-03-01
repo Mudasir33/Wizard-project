@@ -1,20 +1,21 @@
 
 import yellow_potion from "./../website/src/assets/potion.png"
-
+import health_potion from "./../website/src/assets/health_potion.png"
+import { socket } from "./Socket";
 
 export class Utility {
-    constructor(player, type) {
+    constructor(player, type, room) {
         this.player = player;
         this.duration = type.duration;
         this.amount = type.amount;
         this.type = type;
-
+        this.room = room;
+        
         this.active = true;
         this.timer = 0;
         
-
         if (type.instant) {
-            this.applyInstant();
+            this.applyInstant(room);
             this.active = false;
         } 
         else {
@@ -24,21 +25,28 @@ export class Utility {
     }
     applyStart() {
         if (this.type.name === "haste") {
-            console.log("before:", this.player.speed)
-            this.player.speed = (this.player.speed || 100) + this.amount;
-             console.log("after:", this.player.speed)
+           socket.emit("Use_utility", ({util: this.type.name, amount: this.amount, room: this.room}));   
         }
     }
-    remove() {
+
+    applyInstant(){
+          if (this.type.name === "health") {
+               socket.emit("Use_utility", ({util: this.type.name, amount: this.amount, room: this.room}));   
+            }
+         this.active = false;
+    }
+
+    remove(){
         if (this.type.name === "haste") {
-            this.player.speed = (this.player.speed || 100) -this.amount;
-            console.log("Speed changed to", this.player.speed)
+                console.log("remove haste, speed:", this.player.speed
+                )
+                socket.emit("remove_util", ({util: this.type.name, amount: this.amount, room: this.room}));   
         }
         this.active = false;
     }
     update(dt) {
         if (!this.active) return;
-        console.log(this.timer)
+        //console.log(this.timer)
         this.timer += dt;
         if (this.timer >= this.duration) {
             console.log("remove haste")
@@ -50,9 +58,24 @@ export class Utility {
 export const utility_list = {
     haste: {
         name: "haste",
-        duration: 1,
-        amount: 300,
+        displayName: "Haste",
+        description: "Triples movement speed for 5 seconds",
+        duration: 5,
+        amount: 3,
         instant: false,
-        texture: yellow_potion
+        texture: yellow_potion,
+        pickupTexture: yellow_potion
+    },
+    health:{
+        name: "health",
+        displayName: "Heal",
+        description: "Instantly restores 50 health",
+        duration: 1,
+        amount: 50,
+        instant: true,
+        texture: health_potion,
+        pickupTexture: health_potion
     }
+
+    
 };

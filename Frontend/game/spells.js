@@ -73,13 +73,18 @@ export const spell_list = {
         speed: 200,
         damage: 25,
         size: 18,
-        aoeRadius: 50
+        aoeRadius: 50,
+        name: "Fireball",
+        description: "Explodes on impact dealing AoE damage"
     },
     magic_missile: {
         texture: missile,
+        pickupTexture: missile,
         speed: 100,
         damage: 12,
-        size: 12
+        size: 12,
+        name: "Magic Missile",
+        description: "Basic projectile spell"
     },
     bouncing_shot: {
         texture: bouncingShot,
@@ -88,6 +93,8 @@ export const spell_list = {
         damage: 15,
         size: 14,
         maxBounces: 3,
-        spinSpeed: 10
+        spinSpeed: 10,
+        name: "Bouncing Shot",
+        description: "Bounces off walls and enemies up to 3 times"
     }
 };
