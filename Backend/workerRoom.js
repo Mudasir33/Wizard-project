@@ -24,7 +24,7 @@ const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 
-const ZONE_DURATION = 60_00000000000000000000;
+const ZONE_DURATION = 60000;
 let zone = {
   active: false,
   startTime: 0,
@@ -53,23 +53,24 @@ function handleInput(msg) {
                 }
             }
             //
-            let xPos = Math.floor(Math.random() * 50);
-            let yPos = Math.floor(Math.random() * 50);
-
-            let tile = msg.Map2d.layers[0].grid[xPos][yPos];
+            let xPos = Math.floor(  Math.random() * 50);
+            let yPos = Math.floor(  Math.random() * 50);
+            let tile = msg.Map2d.layers[0].grid[yPos][xPos];
 
             //loops until they have an player postion is within within tile id 138 (light gray tile)
             while (!tile || tile.id !== 138) {
-                xPos = Math.floor(Math.random() * 50);
-                yPos = Math.floor(Math.random() * 50);
-                tile = msg.Map2d.layers[0].grid[xPos][yPos];
+
+                
+                xPos = Math.floor(  Math.random() * 50);
+                yPos =Math.floor(  Math.random() * 50);
+                tile = msg.Map2d.layers[0].grid[yPos][xPos];
             }
             const index = Object.keys(players).length;
             players[msg.socketId] = {
                 username: msg.username,
                 color: colors[index],
                 ready: false,
-                x: xPos*16,
+                x:xPos*16,
                 y: yPos*16,
                 health: 100,
                 alive: true,
@@ -173,7 +174,7 @@ function handleInput(msg) {
 
         // Only damage if client says they are inside the zone
         if (msg.state === false && ongoing === true) {
-            player.health -= 0.2;
+           
 
             if (player.health <= 0 && player.alive) {
             player.alive = false;
@@ -186,7 +187,9 @@ function handleInput(msg) {
                 players[winner].alive = false;
                 parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
             }
+             
             }
+            player.health -= 0.2;
         }
         break;
         }        
@@ -488,6 +491,7 @@ let activeeffects = {};
 let num = 0;
 let windscounter = 0;
 // loop for creating wind effect every 10 sec
+/*
 setInterval(() => {
     if (windscounter == 0) {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
@@ -500,8 +504,7 @@ setInterval(() => {
     num++;
     //console.log(activeeffects);
 }, 10000);
-
-
+*/
 function getRandomWalkableTile() {
    
       if (!mapheight || !mapwidth) return { x: 5, y: 5 };

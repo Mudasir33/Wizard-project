@@ -678,7 +678,7 @@ export default function Game() {
 
             const dx = px - centerW;
             const dy = py - centerH;
-            //console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
+            console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
         }
@@ -707,6 +707,8 @@ export default function Game() {
         ctx.arc(centerW, centerH, smallRadius, 0, Math.PI * 2);
         } 
         ctx.fill("evenodd");
+        console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
+        
         const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
         socket.emit('zone', {state, roomkey});  
       }

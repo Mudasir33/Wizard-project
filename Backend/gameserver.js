@@ -110,7 +110,7 @@ app.use(express.static('Public'));
 async function startServer() {
     const Map2d = await mapCreation();
     io.on('connection', (socket) => {
-        //console.log(Map2d.layers[0].grid[49][49]);
+        //console.log(Map2d.layers[0].grid[39][48]);
         
 
         socket.on('Game', (room) => {
