@@ -102,7 +102,8 @@ app.use(express.static('Public'));
 async function startServer() {
     const Map2d = await mapCreation();
     io.on('connection', (socket) => {
-
+        //console.log(Map2d.layers[0].grid[49][49]);
+        
 
         socket.on('Game', (room) => {
             socket.emit('spawnItems', sessions[room]?.items || []);
@@ -180,7 +181,7 @@ async function startServer() {
             socket.join(room);
         
             if (roomWorkers[room]) {
-                roomWorkers[room].postMessage({ type: 'input', action: 'join', socketId: socket.id, username });
+                roomWorkers[room].postMessage({ type: 'input', action: 'join', socketId: socket.id, username, Map2d });
             } else {
                 console.log('No worker for room:', room);
             }

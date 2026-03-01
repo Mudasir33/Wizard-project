@@ -46,13 +46,25 @@ function handleInput(msg) {
                     return;
                 }
             }
+            //
+            let xPos = Math.floor(Math.random() * 50);
+            let yPos = Math.floor(Math.random() * 50);
+
+            let tile = msg.Map2d.layers[0].grid[xPos][yPos];
+
+            //loops until they have an player postion is within within tile id 138 (light gray tile)
+            while (!tile || tile.id !== 138) {
+                xPos = Math.floor(Math.random() * 50);
+                yPos = Math.floor(Math.random() * 50);
+                tile = msg.Map2d.layers[0].grid[xPos][yPos];
+            }
             const index = Object.keys(players).length;
             players[msg.socketId] = {
                 username: msg.username,
                 color: colors[index],
                 ready: false,
-                x: spawn_x,
-                y: spawn_y,
+                x: xPos*16,
+                y: yPos*16,
                 health: 100,
                 alive: true,
                 id: index + 1,
@@ -436,7 +448,7 @@ setInterval(() => {
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
     }
     num++;
-    console.log(activeeffects);
+    //console.log(activeeffects);
 }, 10000);
 
 
