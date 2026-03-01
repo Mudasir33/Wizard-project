@@ -39,15 +39,18 @@ function startRoomWorker(roomName, initialState) {
             const clonedPlayers = JSON.parse(JSON.stringify(msg.state.players));
             const clonedMove = JSON.parse(JSON.stringify(msg.state.move));
             const clonedMap = msg.state.map ? JSON.parse(JSON.stringify(msg.state.map)) : null;
+            const clonedEffects = msg.state.effects ? JSON.parse(JSON.stringify(msg.state.effects)) : [];
             const clonedItems = msg.state.items ? JSON.parse(JSON.stringify(msg.state.items)) : [];
             sessions[roomName].players = clonedPlayers;
             sessions[roomName].move = clonedMove;
             sessions[roomName].map = clonedMap;
+            sessions[roomName].effects = clonedEffects;
             sessions[roomName].items = clonedItems;
             sessions[roomName].numready = msg.state.numready;
             let ongoing_change = ( sessions[roomName].ongoing !== msg.state.ongoing )
             sessions[roomName].ongoing = msg.state.ongoing;
             io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
+            io.to(roomName).emit('effectsUpdate', clonedEffects, roomName);
             io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
             //io.to(roomName).emit('spawnItems', clonedItems, roomName);
             io.to(roomName).emit('zoneUpdate', msg.state.zone, roomName);

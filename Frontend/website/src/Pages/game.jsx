@@ -38,6 +38,7 @@ export default function Game() {
   const playerInputsRef = useRef([]);
   const frontEndProjectilesRef = useRef({})
   const explosionManagerRef = useRef(new ExplosionManager());
+  const effectsRef = useRef([]);
   let gameLoopActive = false;
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
@@ -352,6 +353,29 @@ export default function Game() {
     }
     socket.on('projectileBounced', OnProjectileBounced);
 
+    const onEffectsUpdate = (effects) => {
+      effectsRef.current = Array.isArray(effects) ? effects : [];
+    };
+    socket.on('effectsUpdate', onEffectsUpdate);
+
+    function getSpiderWebSpeedMultiplier(player) {
+      const effects = effectsRef.current || [];
+      const playerCenterX = player.x + 8;
+      const playerCenterY = player.y + 8;
+
+      for (const effect of effects) {
+        if (!effect || effect.effect !== "spiderweb") continue;
+        const radius = effect.radius || 56;
+        const distX = playerCenterX - effect.x;
+        const distY = playerCenterY - effect.y;
+        if (distX * distX + distY * distY <= radius * radius) {
+          return 0.5;
+        }
+      }
+
+      return 1;
+    }
+
       function create_image(src){
         const img = new Image();
         img.src = src;
@@ -469,19 +493,19 @@ export default function Game() {
       // Update player position with wall sliding (match server logic)
       if (frontendPlayers[socket.id]) {
         const player = frontendPlayers[socket.id];
-        const speed = player.speed;
+        const speed = player.speed * getSpiderWebSpeedMultiplier(player);
         player.x += dx * speed * 0.015;
         player.y += dy * speed * 0.015;
         if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
-                player.x += (dx * player.speed * 0.015) ;
-                player.y += (dy * player.speed * 0.015);
+          player.x += (dx * speed * 0.015) ;
+          player.y += (dy * speed * 0.015);
 
 
             }else{
                 //if collision is true from input the characters will move away from the wall
                 if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
-                   player.x += (-dx * player.speed * 0.015); // reverse the input in x coordinate x
-                   player.y += (-dy * player.speed * 0.015); // reverse the input in x coordinate y
+                   player.x += (-dx * speed * 0.015); // reverse the input in x coordinate x
+                   player.y += (-dy * speed * 0.015); // reverse the input in x coordinate y
 
                 }
               }
@@ -643,6 +667,23 @@ export default function Game() {
           }
         }
 
+        const effects = effectsRef.current || [];
+        for (const effect of effects) {
+          if (effect.effect !== "spiderweb") continue;
+          ctx.save();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+          ctx.beginPath();
+          ctx.arc(
+            effect.x * scaleup_constant,
+            effect.y * scaleup_constant,
+            (effect.radius || 0) * scaleup_constant,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          ctx.restore();
+        }
+
         // Update animations
         const deltaTime = (timestamp - lastTime) / 1000; // in seconds
         lastTime = timestamp;
@@ -678,7 +719,7 @@ export default function Game() {
 
             const dx = px - centerW;
             const dy = py - centerH;
-            console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
+            //console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
         }
@@ -707,7 +748,7 @@ export default function Game() {
         ctx.arc(centerW, centerH, smallRadius, 0, Math.PI * 2);
         } 
         ctx.fill("evenodd");
-        console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
+        //console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
         
         const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
         socket.emit('zone', {state, roomkey});  
@@ -961,6 +1002,7 @@ export default function Game() {
       socket.off('projectileSpawned', OnProjectileSpawned);
       socket.off('projectileDeleted', OnProjectileDeleted);
       socket.off('projectileBounced', OnProjectileBounced);
+      socket.off('effectsUpdate', onEffectsUpdate);
       socket.off("updatePlayers", OnupdatePlayer);
       socket.off("spectatorList");
       socket.off("death",death)

@@ -31,6 +31,22 @@ let zone = {
   duration: ZONE_DURATION,
 };
 
+function serializeEffects() {
+    const effects = [];
+    for (const effectid in activeeffects) {
+        const effect = activeeffects[effectid];
+        if (!effect) continue;
+        effects.push({
+            id: Number(effectid),
+            effect: effect.effect,
+            x: effect.x,
+            y: effect.y,
+            radius: effect.radius || 0
+        });
+    }
+    return effects;
+}
+
 function handleInput(msg) {
     switch (msg.action) {
         case 'join': {
@@ -295,6 +311,7 @@ function handleInput(msg) {
             move: playerInput,
             backendProjectiles,
             map,
+            effects: serializeEffects(),
             items,
             numready,
             ongoing,
@@ -310,6 +327,19 @@ function handleInput(msg) {
 function gameloop() {
     // Defensive: Only run if map is set and valid
     if (!map || !map.obj) return;
+
+    for (const id in players) {
+        const player = players[id];
+        if (!player) continue;
+        player.effectSpeedMultiplier = 1;
+    }
+
+    for (const effectid in activeeffects) {
+        const effect = activeeffects[effectid];
+        if (!effect || effect.effect !== "spiderweb") continue;
+        effect.applyeffect(players, effect.effect, { objectLayers: [map] }, wallCollison);
+    }
+
     for (const id in players) {
         const player = players[id];
         const input = playerInput[id];
@@ -324,8 +354,10 @@ function gameloop() {
             dy *= inv;
         }
         
-        const moveX = dx * player.speed * 0.015;
-        const moveY = dy * player.speed * 0.015;
+        const speedMultiplier = player.effectSpeedMultiplier ?? 1;
+        const effectiveSpeed = player.speed * speedMultiplier;
+        const moveX = dx * effectiveSpeed * 0.015;
+        const moveY = dy * effectiveSpeed * 0.015;
         
         // Try X movement first
         const oldX = player.x;
@@ -482,8 +514,9 @@ function gameloop() {
 
     }
     for (const effectid in activeeffects) {
-        // console.log(activeeffects[effectid].effect);
-        activeeffects[effectid].applyeffect(players, activeeffects[effectid].effect);
+        const effect = activeeffects[effectid];
+        if (!effect || effect.effect === "spiderweb") continue;
+        effect.applyeffect(players, effect.effect, { objectLayers: [map] }, wallCollison);
     }
 }
 
@@ -491,7 +524,7 @@ let activeeffects = {};
 let num = 0;
 let windscounter = 0;
 // loop for creating wind effect every 10 sec
-/*
+
 setInterval(() => {
     if (windscounter == 0) {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
@@ -504,7 +537,12 @@ setInterval(() => {
     num++;
     //console.log(activeeffects);
 }, 10000);
-*/
+
+setInterval(() => {
+    if (!map || !mapwidth || !mapheight) return;
+    enviormentEffects.upsertSpiderWeb(activeeffects, mapwidth, mapheight, TILE_SIZE);
+}, 12000);
+
 function getRandomWalkableTile() {
    
       if (!mapheight || !mapwidth) return { x: 5, y: 5 };
@@ -573,6 +611,7 @@ setInterval(() => {
                 move: playerInput,
                 backendProjectiles,
                 map,
+                effects: serializeEffects(),
                 items,
                 numready,
                 ongoing,
