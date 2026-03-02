@@ -23,6 +23,10 @@ let mapheight = null;
 const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
+let itemIDcounter = 0;
+let activeeffects = {};
+let windscounter = 0;
+let num = 0;
 
 const ZONE_DURATION = 60000;
 let zone = {
@@ -104,19 +108,48 @@ function handleInput(msg) {
         }
 
         case 'restart_game': {
-            if (Object.keys(players).length === 0) {
-                console.log("restart game", Object.keys(players).length)
+            console.log("restart game - resetting room state");
 
-                playerInput = {}
-                backendProjectiles = {};
-                map = null;
-                ongoing = false;
-                numready = 0;
-                items = [];
+            backendProjectiles = {};
+            ongoing = false;
+            numready = 0;
+            items = [];
+            projectileId = 0;
+            itemIDcounter = 0;
+
+            zone.active = false;
+            zone.startTime = 0;
+            zone.duration = ZONE_DURATION;
+
+            for (const effectId in activeeffects) {
+                delete activeeffects[effectId];
+            }
+            windscounter = 0;
+            num = 0;
+
+            for (const id in players) {
+                const player = players[id];
+                player.health = 100;
+                player.alive = true;
+                player.ready = false;
+                player.speed = basespeed;
+                player.abilities = [];
+                player.lastSpellCast = 0;
+                player.effectSpeedMultiplier = 1;
+                player.sequenceNumber = 0;
+                player.dx = 0;
+                player.dy = 0;
+
+                if (playerInput[id]) {
+                    playerInput[id].dx = 0;
+                    playerInput[id].dy = 0;
+                }
+            }
+
+            if (itemSpawninterval) {
                 clearInterval(itemSpawninterval);
                 itemSpawninterval = null;
             }
-
             break;
         }
 
@@ -145,7 +178,7 @@ function handleInput(msg) {
                   
                 
             if(!ongoing && itemSpawninterval){
-                    clearInterval(temSpawninterval)
+                    clearInterval(itemSpawninterval);
                     itemSpawninterval = null;}
             }
             //checks to see if zone should start or not
@@ -249,9 +282,10 @@ function handleInput(msg) {
         }
 
         case 'util_use': {
-              const player = players[msg.socketId];
-              console.log("player speed:", player.speed )
-              if(msg.util === "health"){
+            const player = players[msg.socketId];
+            if (!player) return;
+            console.log("player speed:", player.speed )
+            if(msg.util === "health"){
                 console.log("before:", player.health)
                 player.health += msg.amount;
                 if(player.health > 100){
@@ -259,17 +293,17 @@ function handleInput(msg) {
                 }
                 console.log("after:", player.health)
               }
-
-              if(msg.util == "haste"){
-                  player.speed = player.speed * 3;
-              }
-              break;
+            if(msg.util == "haste"){
+                player.speed = player.speed * 3;
+            }
+            break;
         }
 
         case 'remove_util': {
-                     const player = players[msg.socketId];
+                    const player = players[msg.socketId];
+                    if (!player) return;
                     if(msg.util == "haste"){
-                         player.speed = basespeed;
+                        player.speed = basespeed;
               }
               break;
         }
@@ -520,9 +554,6 @@ function gameloop() {
     }
 }
 
-let activeeffects = {};
-let num = 0;
-let windscounter = 0;
 // loop for creating wind effect every 10 sec
 
 setInterval(() => {
@@ -530,7 +561,7 @@ setInterval(() => {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
         windscounter++;
         console.log("created wind");
-    } else if (windscounter == 1){
+    } else if (windscounter == 1 && activeeffects[0]){
         activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
     }
@@ -550,8 +581,6 @@ function getRandomWalkableTile() {
         const y = Math.floor(Math.random() * mapheight)
       return { x, y };
     }
-
-let itemIDcounter = 0;
 
 function spawnItems(){
     if(!map) return;

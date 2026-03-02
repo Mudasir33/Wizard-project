@@ -39,7 +39,9 @@ export default function Game() {
   const frontEndProjectilesRef = useRef({})
   const explosionManagerRef = useRef(new ExplosionManager());
   const effectsRef = useRef([]);
-  let gameLoopActive = false;
+  const gameLoopActiveRef = useRef(false);
+  const animationFrameRef = useRef(null);
+  const sequenceNumberRef = useRef(0);
   const gameStartedRef = useRef(false);
   const isSpectatingRef = useRef(false);
   const activeUtilitiesRef = useRef([]);
@@ -191,13 +193,12 @@ export default function Game() {
 
     function mapOn(loadmap) {
       map = loadmap;
-      gameLoopActive = true;
-      requestAnimationFrame(loop);
+      gameLoopActiveRef.current = true;
+      animationFrameRef.current = requestAnimationFrame(loop);
     }
     socket.on("map", mapOn);
     const frontendPlayers = frontendPlayersRef.current;
     const playerInputs = playerInputsRef.current;
-    let sequenceNumber = 0;
 
     function OnupdatePlayer(backendPlayers, room) {
 
@@ -273,14 +274,15 @@ export default function Game() {
 
     const keys = keysRef.current;
     //maybe needs to be closed after a render?
-    window.addEventListener('keydown', (e,) => {
+    function handleKeyDown(e) {
       keys[e.key] = true;
-    });
-
-    window.addEventListener('keyup', (e) => {
+    }
+    function handleKeyUp(e) {
       keys[e.key] = false;
       socket.emit('keyup', e.code, roomkey);
-    });
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     //############ WALL COLLISION #######################
     function wallCollison(object, player) {
@@ -513,7 +515,16 @@ export default function Game() {
         // Send combined movement input to server (always, even when 0, to stop movement)
         player.dx = dx;
         player.dy = dy;
-        socket.emit('movement', { dx, dy, sequenceNumber, roomkey });
+        
+        // Store input for server reconciliation
+        sequenceNumberRef.current++;
+        playerInputs.push({
+          dx: dx * speed * 0.015,
+          dy: dy * speed * 0.015,
+          sequenceNumber: sequenceNumberRef.current
+        });
+        
+        socket.emit('movement', { dx, dy, sequenceNumber: sequenceNumberRef.current, roomkey });
       }
 
       // Update spell direction from right joystick FIRST
@@ -590,7 +601,7 @@ export default function Game() {
     });
     let lastTime = 0;
     function loop(timestamp) {
-      if (!gameLoopActive || !map) return;
+      if (!gameLoopActiveRef.current || !map) return;
       
       // If spectating but player not found, still allow rendering other players
       if (!isSpectatingRef.current && !frontendPlayers[socket.id]) return;
@@ -950,11 +961,10 @@ export default function Game() {
       }
     }
 
-    //requestAnimationFrame(loop);// if it's inside the interval the game will get slower
-
-    setInterval(() => {
-      requestAnimationFrame(loop);
-      // console.log("inputs:", playerInputs);
+    const gameLoopInterval = setInterval(() => {
+      if (gameLoopActiveRef.current) {
+        animationFrameRef.current = requestAnimationFrame(loop);
+      }
     }, 15);
 
     // Handle spectate exit button click
@@ -998,6 +1008,14 @@ export default function Game() {
     socket.on("winner", winner)
 
     return () => {
+      // Stop the game loop
+      gameLoopActiveRef.current = false;
+      clearInterval(gameLoopInterval);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
       socket.off('map', mapOn);
       socket.off('projectileSpawned', OnProjectileSpawned);
       socket.off('projectileDeleted', OnProjectileDeleted);
@@ -1007,11 +1025,29 @@ export default function Game() {
       socket.off("spectatorList");
       socket.off("death",death)
       socket.off("winner", winner)
+      socket.off("spawnItems", spawnitems)
+      socket.off("removeItem", removeitem)
+      socket.off("zoneUpdate");
+
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('resize', pixelRatio);
+      window.visualViewport?.removeEventListener('resize', pixelRatio);
+      remove?.();
+
       canvas.removeEventListener('click', handleCanvasClick);
       
-    socket.off("spawnItems", spawnitems)
-    socket.off("removeItem", removeitem)
-      explosionManagerRef.current.clear(); // Clean up DOM elements
+      frontendPlayersRef.current = {};
+      playerInputsRef.current = [];
+      frontEndProjectilesRef.current = {};
+      itemRef.current = [];
+      effectsRef.current = [];
+      keysRef.current = {};
+      activeUtilitiesRef.current = [];
+      sequenceNumberRef.current = 0;
+      gameStartedRef.current = false;
+      
+      explosionManagerRef.current.clear();
     };
   }, [])
 

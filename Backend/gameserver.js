@@ -97,6 +97,10 @@ function startRoomWorker(roomName, initialState) {
     worker.on('exit', (code) => {
         if (code !== 0) {
             console.error(`Worker for ${roomName} stopped with exit code ${code}`);
+            console.log(`Restarting worker for ${roomName}...`);
+            const freshState = { id: roomName, players: {}, spectators: {}, move: {}, backendProjectiles: {}, map: null, ongoing: false, numready: 0, items: [] };
+            sessions[roomName] = freshState;
+            startRoomWorker(roomName, freshState);
         }
     });
     roomWorkers[roomName] = worker;
