@@ -36,7 +36,7 @@ const trapStats = {
     bear_trap: { damage: 20, immobilizeDuration: 3000, triggerRadius: 8 }
 };
 
-const ZONE_DURATION = 240000;
+const ZONE_DURATION = 60_000;
 let zone = {
   active: false,
   startTime: 0,
@@ -155,12 +155,14 @@ function handleInput(msg) {
                     playerInput[id].dx = 0;
                     playerInput[id].dy = 0;
                 }
+        
             }
 
             if (itemSpawninterval) {
                 clearInterval(itemSpawninterval);
                 itemSpawninterval = null;
             }
+            players = {};
             break;
         }
 
@@ -364,12 +366,26 @@ function handleInput(msg) {
             break;
         }
         case 'delete_user': {
-
-            if (players[msg.socketId]) {
+            const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+            if (aliveplayers[msg.socketId]  ) {
                 console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
+                 
+               
+
+                if(aliveplayers.length === 1 ){
+                    const winner = aliveplayers[0];
+                    console.log("winner disoconnet:", winner)
+                    players[winner].alive = false;
+                    parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+
+            }
+                if(aliveplayers.length === 0){
+                    console.log("alicve player = 0, restart game")
+                    handleInput({ type: 'input', action: 'restart_game' })
+                }
 
             }
             break;
@@ -464,9 +480,10 @@ function gameloop() {
                 player.y + 15 > item.y
             ) {
                 items.splice(i, 1);
-                console.log("remove item pickup worker:", item)
+                console.log("remove item pickup worker:", item, "player pick up", pid)
                 parentPort.postMessage({
                     type: "removeItem", 
+                    pid: pid,
                     item: item
                 })
                 if (!player.abilities) player.abilities = [];
@@ -579,7 +596,7 @@ function gameloop() {
 
                     players[pid].health -= finalDamage;
 
-                    if (players[pid].health <= 0 && players[pid].alive === true) {
+                    if (players[pid].health <= 0 && players[pid].alive === true ) {
                         players[pid].alive = false;
                         const aliveplayers = Object.keys(players).filter(id => players[id].alive);
                         parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
@@ -589,8 +606,11 @@ function gameloop() {
                             parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
                         }
                     }
+                
                 }
             }
+
+         
 
             if (projectile.bouncesRemaining > 0) {
                 const player = players[hitPlayerId];
@@ -603,6 +623,8 @@ function gameloop() {
                 }
             }
         }
+
+        
 
         if (wallHit || playerHit) {
             if (projectile.bouncesRemaining > 0) {
@@ -670,9 +692,9 @@ function getRandomWalkableTile() {
 function spawnItems(){
     if(!map) return;
 
-    console.log("items spawned backend")
+    //console.log("items spawned backend")
     const pos = getRandomWalkableTile();
-    console.log("position item spawn:", pos)
+    //console.log("position item spawn:", pos)
 
     const rand = Math.random();
     let type, key;
@@ -755,7 +777,7 @@ parentPort.on('message', (msg) => {
         handleInput(msg);
     } else if (msg.type === 'set_map') {
         map = msg.map;
-        console.log("map width:", msg.mapwidth)
+        //console.log("map width:", msg.mapwidth)
         mapwidth = msg.mapwidth;
         mapheight = msg.mapheight;
             } else if (msg.type === 'shutdown') {

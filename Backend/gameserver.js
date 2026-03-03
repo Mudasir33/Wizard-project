@@ -86,7 +86,7 @@ function startRoomWorker(roomName, initialState) {
         }
           else if (msg.type === 'removeItem'){
             console.log("remove item gameserver:", msg.item)
-            io.to(roomName).emit("removeItem", msg.item)
+            io.to(roomName).emit("removeItem", msg.item, msg.pid)
         }
         else if (msg.type === 'trapPlaced'){
             console.log("trap placed:", msg.trap)

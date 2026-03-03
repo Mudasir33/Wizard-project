@@ -412,7 +412,7 @@ export default function Game() {
 
     socket.on("spawnItems", spawnitems)
 
-    const removeitem =(removed_item)=>
+    const removeitem =(removed_item, pid)=>
     {
       console.log("remove item frontend", removed_item)
       // need to make it so it get pickuped
@@ -423,6 +423,9 @@ export default function Game() {
       itemRef.current = itemRef.current.filter(item => item.id !== removed_item.id)
           // console.log("item frontend after remove :", itemRef.current)
        // need to make it so it get pickuped
+      console.log("player:", socket.id)
+      console.log("player pickup:", pid)
+      if(pid === socket.id){
              if(current_item.type === "spell"){
                     // Un-equip any existing spell when picking up new one
                     equippedSpellRef.current = null;
@@ -436,6 +439,7 @@ export default function Game() {
                     button2IconRef.current = { key: current_item.key, image: current_item.image_pickup };
                     console.log("button2IconRef:", button2IconRef)
                   }
+        }
     }
     socket.on("removeItem", removeitem)
 
