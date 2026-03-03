@@ -6,7 +6,7 @@ import SpectateSession from './Pages/SpectateSession'
 import SpectatorRoom from './Pages/SpectatorRoom'
 import Room from "./Pages/Room";
 import Guide from "./Pages/Guide";
-import Game from "./Pages/Game";
+import Game from "./Pages/game";
 import Menu from "./Pages/menu"
 export default function App() {
 

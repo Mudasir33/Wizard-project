@@ -16,7 +16,7 @@ export default function menu() {
      const [autoplayBlocked, setAutoplayBlocked] = useState(false);
      const [isPlaying, setIsPlaying] = useState(false);
 
-     useEffect(() => {
+     /*useEffect(() => {
        audioRef.current = new Audio(menuMusic);
        audioRef.current.loop = true;
        audioRef.current.volume = 0.6;
@@ -30,7 +30,7 @@ export default function menu() {
        return () => {
          try { audioRef.current.pause(); audioRef.current.currentTime = 0; } catch (e) {}
        };
-     }, []);
+     }, []); */
 
 
     if(showGuide){
