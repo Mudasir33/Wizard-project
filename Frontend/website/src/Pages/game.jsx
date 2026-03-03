@@ -5,6 +5,7 @@ import { Player } from "../../../game/Player.js";
 import { Joystick } from "../../../game/joystick.js";
 import { Button } from "../../../game/Buttons.js";
 import { Spell, spell_list } from "../../../game/spells.js";
+import { Trap, trap_list } from "../../../game/traps.js";
 import { ExplosionManager } from "../../../game/spell_effects.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
@@ -29,7 +30,9 @@ export default function Game() {
   const equippedSpellRef = useRef(null);
  
   const button1IconRef = useRef(null);
+  const button2IconRef = useRef(null);
   const button3IconRef = useRef(null)
+  const trapsRef = useRef([]);
   const startTimeRef = useRef(null);
   const frontendPlayersRef = useRef({});
   const canvasRef = useRef(null);
@@ -139,7 +142,7 @@ export default function Game() {
       spellJoystickRef.current.attachEvents(canvas);
 
       buttonsRef.current.b1 = new Button(b1X, b1Y, BUTTON_RADIUS, "1", "test", () => changeSpell(1));
-      buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Health", null);
+      buttonsRef.current.b2 = new Button(b2X, b2Y, BUTTON_RADIUS, "2", "Trap", () => placeTrap(2));
       buttonsRef.current.b3 = new Button(b3X, b3Y, BUTTON_RADIUS, "3", "Utility", ()=> changehaste(3));
       
       buttonsRef.current.b1.setCanvas(canvas);
@@ -215,6 +218,7 @@ export default function Game() {
           frontendPlayers[id].alive = backendPlayer.alive;
           frontendPlayers[id].dx = backendPlayer.dx;
           frontendPlayers[id].dy = backendPlayer.dy;
+          frontendPlayers[id].immobilizedUntil = backendPlayer.immobilizedUntil || 0;
 
           if (id === socket.id) {
             // Update existing player position
@@ -386,16 +390,23 @@ export default function Game() {
     const spawnitems = (spawnItems)=> {
       console.log("item spawned:", spawnItems.key)
 
+      let texture, pickupTexture;
+      if (spawnItems.type === "spell") {
+        texture = spell_list[spawnItems.key].texture;
+        pickupTexture = spell_list[spawnItems.key].pickupTexture;
+      } else if (spawnItems.type === "utility") {
+        texture = utility_list[spawnItems.key].texture;
+        pickupTexture = utility_list[spawnItems.key].pickupTexture;
+      } else if (spawnItems.type === "trap") {
+        texture = trap_list[spawnItems.key].pickupTexture;
+        pickupTexture = trap_list[spawnItems.key].pickupTexture;
+      }
+
       itemRef.current.push({
         ...spawnItems,
         active: true,
-        image: create_image(spawnItems.type==="spell"
-          ?spell_list[spawnItems.key].texture : utility_list[spawnItems.key].texture
-        ),
-        image_pickup: create_image(spawnItems.type==="spell"
-           ?spell_list[spawnItems.key].pickupTexture : utility_list[spawnItems.key].pickupTexture
-        )
-        
+        image: create_image(texture),
+        image_pickup: create_image(pickupTexture)
       })
     }
 
@@ -421,8 +432,37 @@ export default function Game() {
                     button3IconRef.current = { key: current_item.key, image: current_item.image_pickup };
                     console.log("button3IconRef:", button3IconRef)
                   }
+                  if(current_item.type === "trap"){
+                    button2IconRef.current = { key: current_item.key, image: current_item.image_pickup };
+                    console.log("button2IconRef:", button2IconRef)
+                  }
     }
     socket.on("removeItem", removeitem)
+
+    // Handle trap placed event
+    const onTrapPlaced = (trap) => {
+      console.log("Trap placed:", trap);
+      const trapType = trap_list[trap.key];
+      if (trapType) {
+        const newTrap = new Trap(trap.x, trap.y, trapType, trap.id, trap.ownerId);
+        trapsRef.current.push(newTrap);
+      }
+    }
+    socket.on("trapPlaced", onTrapPlaced)
+
+    // Handle trap triggered event
+    const onTrapTriggered = (trapId, victimId) => {
+      console.log("Trap triggered:", trapId, "victim:", victimId);
+      const trap = trapsRef.current.find(t => t.id === trapId);
+      if (trap) {
+        trap.trigger();
+        // Remove trap after animation
+        setTimeout(() => {
+          trapsRef.current = trapsRef.current.filter(t => t.id !== trapId);
+        }, trap.triggerAnimationDuration || 1500);
+      }
+    }
+    socket.on("trapTriggered", onTrapTriggered)
 
     //####SPELLS#############################################################################################
     let direction = {
@@ -460,6 +500,15 @@ export default function Game() {
     const b3Y = spellJoystickY;
 
     function updatePlayer() {
+       
+      // Check if player is immobilized (stunned) - block all input
+      const myPlayer = frontendPlayers[socket.id];
+      if (myPlayer && myPlayer.immobilizedUntil && Date.now() < myPlayer.immobilizedUntil) {
+        // Player is stunned - don't process any movement input
+        myPlayer.dx = 0;
+        myPlayer.dy = 0;
+        return;
+      }
        
       let dx = 0,
         dy = 0;
@@ -592,6 +641,16 @@ export default function Game() {
       }
     }
 
+    function placeTrap(button) {
+      // Button 2: place trap at player's position
+      if (button === 2 && button2IconRef.current) {
+        const trapKey = button2IconRef.current.key;
+        console.log("Placing trap:", trapKey);
+        socket.emit('placeTrap', { trapKey, roomkey });
+        button2IconRef.current = null;
+      }
+    }
+
     //####MAIN GAME LOOP#############################################################################################
     
     let zone = null;
@@ -703,12 +762,21 @@ export default function Game() {
           
         });
         activeUtilitiesRef.current = (activeUtilitiesRef.current || []).filter(util =>{
+          if(!util || !util.type) return false;
           if(!util.type.instant){
           util.update(deltaTime);
           return util.active;
           }
-       
+          return false;
         })
+
+        // Draw placed traps (before players so players appear on top)
+        trapsRef.current.forEach(trap => {
+          if (trap.isActive) {
+            trap.update(deltaTime);
+            trap.draw(ctx, scaleup_constant);
+          }
+        });
 
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
@@ -820,7 +888,20 @@ export default function Game() {
             );
             ctx.restore();
           }
-          buttonsRef.current.b2.draw(ctx);
+
+          if (button2IconRef.current && button2IconRef.current.image) {
+            const btn = buttonsRef.current.b2;
+            const iconSize = btn.r * 2;
+            ctx.save();
+            ctx.drawImage(
+              button2IconRef.current.image,
+              btn.x - btn.r,
+              btn.y - btn.r,
+              iconSize,
+              iconSize
+            );
+            ctx.restore();
+          }
 
           if (button3IconRef.current && button3IconRef.current.image) {
             const btn = buttonsRef.current.b3;
@@ -1027,6 +1108,8 @@ export default function Game() {
       socket.off("winner", winner)
       socket.off("spawnItems", spawnitems)
       socket.off("removeItem", removeitem)
+      socket.off("trapPlaced", onTrapPlaced)
+      socket.off("trapTriggered", onTrapTriggered)
       socket.off("zoneUpdate");
 
       window.removeEventListener('keydown', handleKeyDown);
@@ -1042,10 +1125,14 @@ export default function Game() {
       frontEndProjectilesRef.current = {};
       itemRef.current = [];
       effectsRef.current = [];
+      trapsRef.current = [];
       keysRef.current = {};
       activeUtilitiesRef.current = [];
       sequenceNumberRef.current = 0;
       gameStartedRef.current = false;
+      button1IconRef.current = null;
+      button2IconRef.current = null;
+      button3IconRef.current = null;
       
       explosionManagerRef.current.clear();
     };

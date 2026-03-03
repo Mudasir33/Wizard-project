@@ -15,6 +15,7 @@ let itemSpawninterval = null;
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 const spellkeys = ["fireball", "bouncing_shot"]
 const utilitykeys = ["haste", "health"]
+const trapkeys = ["bear_trap"]
 const TILE_SIZE = 16;
 let spawn_x = 50;
 const basespeed = 200;
@@ -24,11 +25,18 @@ const spell_cd = 500;
 let spawn_y = 125;
 let projectileId = 0;
 let itemIDcounter = 0;
+let trapIdCounter = 0;
+let traps = [];
 let activeeffects = {};
 let windscounter = 0;
 let num = 0;
 
-const ZONE_DURATION = 60000;
+// Trap stats configuration
+const trapStats = {
+    bear_trap: { damage: 20, immobilizeDuration: 3000, triggerRadius: 8 }
+};
+
+const ZONE_DURATION = 240000;
 let zone = {
   active: false,
   startTime: 0,
@@ -114,8 +122,10 @@ function handleInput(msg) {
             ongoing = false;
             numready = 0;
             items = [];
+            traps = [];
             projectileId = 0;
             itemIDcounter = 0;
+            trapIdCounter = 0;
 
             zone.active = false;
             zone.startTime = 0;
@@ -139,6 +149,7 @@ function handleInput(msg) {
                 player.sequenceNumber = 0;
                 player.dx = 0;
                 player.dy = 0;
+                player.immobilizedUntil = 0;
 
                 if (playerInput[id]) {
                     playerInput[id].dx = 0;
@@ -308,6 +319,35 @@ function handleInput(msg) {
               break;
         }
 
+        case 'placeTrap': {
+            const player = players[msg.socketId];
+            if (!player || !player.alive) return;
+            if (!player.abilities || player.abilities.length === 0) return;
+            
+            const trapIndex = player.abilities.findIndex(a => a === msg.trapKey);
+            if (trapIndex === -1) return;
+
+            player.abilities.splice(trapIndex, 1);
+            
+            const stats = trapStats[msg.trapKey] || trapStats.bear_trap;
+            const trap = {
+                id: trapIdCounter++,
+                x: player.x,
+                y: player.y,
+                key: msg.trapKey,
+                ownerId: msg.socketId,
+                damage: stats.damage,
+                immobilizeDuration: stats.immobilizeDuration,
+                triggerRadius: stats.triggerRadius,
+                active: true,
+                triggered: false
+            };
+            
+            traps.push(trap);
+            parentPort.postMessage({ type: 'trapPlaced', trap });
+            break;
+        }
+
         case 'keyup': {
             if (!playerInput[msg.socketId]) return;
             if (msg.key == 'KeyW' || msg.key == 'KeyS') playerInput[msg.socketId].dy = 0;
@@ -347,6 +387,7 @@ function handleInput(msg) {
             map,
             effects: serializeEffects(),
             items,
+            traps,
             numready,
             ongoing,
             zone: {
@@ -379,6 +420,10 @@ function gameloop() {
         const input = playerInput[id];
         if (!input) continue;
         if (player.alive === false) continue;
+
+        if (player.immobilizedUntil && Date.now() < player.immobilizedUntil) {
+            continue; 
+        }
         
         let dx = input.dx;
         let dy = input.dy;
@@ -425,10 +470,50 @@ function gameloop() {
                     item: item
                 })
                 if (!player.abilities) player.abilities = [];
-                player.abilities.push(item.type);
+                player.abilities.push(item.key);
             }
         }
     }
+    
+    for (let i = traps.length - 1; i >= 0; i--) {
+        const trap = traps[i];
+        if (!trap.active || trap.triggered) continue;
+        
+        for (const pid in players) {
+            const player = players[pid];
+            if (!player.alive) continue;
+            if (pid === trap.ownerId) continue;
+
+            const dx = player.x - trap.x;
+            const dy = player.y - trap.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < trap.triggerRadius + 8) { 
+                trap.triggered = true;
+                trap.active = false;
+
+                player.health -= trap.damage;
+                player.immobilizedUntil = Date.now() + trap.immobilizeDuration;
+
+                if (player.health <= 0 && player.alive) {
+                    player.alive = false;
+                    const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                    parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
+                    if (aliveplayers.length === 1) {
+                        const winner = aliveplayers[0];
+                        players[winner].alive = false;
+                        parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                    }
+                }
+
+                parentPort.postMessage({ type: 'trapTriggered', trapId: trap.id, victimId: pid });
+
+                traps.splice(i, 1);
+                break;
+            }
+        }
+    }
+    
     for (const id in backendProjectiles) {
         const projectile = backendProjectiles[id];
         const direction = projectile.spellDirection;
@@ -588,17 +673,25 @@ function spawnItems(){
     console.log("items spawned backend")
     const pos = getRandomWalkableTile();
     console.log("position item spawn:", pos)
-    const isspell = Math.random() >= 0.5;
 
-    const key = isspell
-        ?spellkeys[Math.floor(Math.random() *spellkeys.length)]
-        : utilitykeys[Math.floor(Math.random() * utilitykeys.length)]
+    const rand = Math.random();
+    let type, key;
+    if (rand < 0.4) {
+        type = "spell";
+        key = spellkeys[Math.floor(Math.random() * spellkeys.length)];
+    } else if (rand < 0.8) {
+        type = "utility";
+        key = utilitykeys[Math.floor(Math.random() * utilitykeys.length)];
+    } else {
+        type = "trap";
+        key = trapkeys[Math.floor(Math.random() * trapkeys.length)];
+    }
 
     const item = {
         id : itemIDcounter++,
         x: pos.x * TILE_SIZE + TILE_SIZE /2,
         y: pos.y * TILE_SIZE + TILE_SIZE /2,
-        type: isspell ? "spell" : "utility",
+        type,
         key
     }
     //console.log("workerroom item spawn:", item)
@@ -618,6 +711,7 @@ setInterval(() => {
         move: playerInput,
         map,
         items,
+        traps,
         numready,
         ongoing
     };
@@ -642,6 +736,7 @@ setInterval(() => {
                 map,
                 effects: serializeEffects(),
                 items,
+                traps,
                 numready,
                 ongoing,
                 zone: {

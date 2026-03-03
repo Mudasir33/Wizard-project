@@ -88,6 +88,14 @@ function startRoomWorker(roomName, initialState) {
             console.log("remove item gameserver:", msg.item)
             io.to(roomName).emit("removeItem", msg.item)
         }
+        else if (msg.type === 'trapPlaced'){
+            console.log("trap placed:", msg.trap)
+            io.to(roomName).emit("trapPlaced", msg.trap)
+        }
+        else if (msg.type === 'trapTriggered'){
+            console.log("trap triggered:", msg.trapId, "victim:", msg.victimId)
+            io.to(roomName).emit("trapTriggered", msg.trapId, msg.victimId)
+        }
      
 
     });
@@ -183,6 +191,12 @@ async function startServer() {
         socket.on('spellCast', ({ spellName, spellDirection, x, y, roomkey }) => {
             if (roomWorkers[roomkey]) {
                 roomWorkers[roomkey].postMessage({ type: 'input', action: 'spellCast', socketId: socket.id, spellName, spellDirection, x, y });
+            }
+        });
+
+        socket.on('placeTrap', ({ trapKey, roomkey }) => {
+            if (roomWorkers[roomkey]) {
+                roomWorkers[roomkey].postMessage({ type: 'input', action: 'placeTrap', socketId: socket.id, trapKey });
             }
         });
 

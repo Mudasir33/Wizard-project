@@ -27,6 +27,7 @@ export class Player {
     this.dx = 0;
     this.dy = 0;
     this.direction = 'idle'; // idle, up, down, left, right
+    this.immobilizedUntil = 0; // Timestamp when immobilization ends
 
     // Hitbox dimensions (adjust as needed)
     this.width = 16;
@@ -83,6 +84,16 @@ export class Player {
       this.currentFrame =
         (this.currentFrame + 1) % this.totalFrames;
     }
+    
+    // Force idle if immobilized (stunned by trap)
+    if (this.immobilizedUntil && Date.now() < this.immobilizedUntil) {
+      this.direction = 'idle';
+      this.currentFrameY = 4;
+      this.totalFrames = 1;
+      this.currentFrame = 0;
+      return;
+    }
+    
     // Update direction based on dx and dy
     if (this.dx === 0 && this.dy === 0) {
       this.direction = 'idle';

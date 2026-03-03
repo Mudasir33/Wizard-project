@@ -38,15 +38,13 @@ export class Utility {
 
     remove(){
         if (this.type.name === "haste") {
-                console.log("remove haste, speed:", this.player.speed
-                )
+                console.log("remove haste, speed:", this.player?.speed)
                 socket.emit("remove_util", ({util: this.type.name, amount: this.amount, room: this.room}));   
         }
         this.active = false;
     }
     update(dt) {
         if (!this.active) return;
-        //console.log(this.timer)
         this.timer += dt;
         if (this.timer >= this.duration) {
             console.log("remove haste")
@@ -77,5 +75,4 @@ export const utility_list = {
         pickupTexture: health_potion
     }
 
-    
 };

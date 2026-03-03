@@ -45,6 +45,8 @@ class enviormentEffects {
                 const player = players[id];
                 if (!player || player.alive === false) continue;
 
+                if (player.immobilizedUntil && Date.now() < player.immobilizedUntil) continue;
+
                 let windX = 0;
                 let windY = 0;
 
