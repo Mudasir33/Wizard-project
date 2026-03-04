@@ -36,7 +36,7 @@ const trapStats = {
     bear_trap: { damage: 20, immobilizeDuration: 3000, triggerRadius: 8 }
 };
 
-const ZONE_DURATION = 60_000;
+const ZONE_DURATION = 240000;
 let zone = {
   active: false,
   startTime: 0,
