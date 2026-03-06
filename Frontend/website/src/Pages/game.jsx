@@ -1063,7 +1063,7 @@ export default function Game() {
         if (x >= button.x && x <= button.x + button.width && 
             y >= button.y && y <= button.y + button.height) {
           socket.emit("delete_user", roomkey);
-          socket.emit("restart_game", roomkey);
+          
           nav("/");
         }
       }

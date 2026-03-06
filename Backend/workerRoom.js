@@ -38,9 +38,9 @@ const trapStats = {
 
 const ZONE_DURATION = 240000;
 let zone = {
-  active: false,
-  startTime: 0,
-  duration: ZONE_DURATION,
+    active: false,
+    startTime: 0,
+    duration: ZONE_DURATION,
 };
 
 function serializeEffects() {
@@ -81,16 +81,16 @@ function handleInput(msg) {
                 }
             }
             //
-            let xPos = Math.floor(  Math.random() * 50);
-            let yPos = Math.floor(  Math.random() * 50);
+            let xPos = Math.floor(Math.random() * 50);
+            let yPos = Math.floor(Math.random() * 50);
             let tile = msg.Map2d.layers[0].grid[yPos][xPos];
 
             //loops until they have an player postion is within within tile id 138 (light gray tile)
             while (!tile || tile.id !== 138) {
 
-                
-                xPos = Math.floor(  Math.random() * 50);
-                yPos =Math.floor(  Math.random() * 50);
+
+                xPos = Math.floor(Math.random() * 50);
+                yPos = Math.floor(Math.random() * 50);
                 tile = msg.Map2d.layers[0].grid[yPos][xPos];
             }
             const index = Object.keys(players).length;
@@ -98,8 +98,8 @@ function handleInput(msg) {
                 username: msg.username,
                 color: colors[index],
                 ready: false,
-                x:xPos*16,
-                y: yPos*16,
+                x: xPos * 16,
+                y: yPos * 16,
                 health: 100,
                 alive: true,
                 id: index + 1,
@@ -155,7 +155,7 @@ function handleInput(msg) {
                     playerInput[id].dx = 0;
                     playerInput[id].dy = 0;
                 }
-        
+
             }
 
             if (itemSpawninterval) {
@@ -179,35 +179,36 @@ function handleInput(msg) {
             const numplayers = Object.keys(players).length;
             if (numready / numplayers >= 0.51 && numplayers >= 2) {
                 ongoing = true;
-                if(ongoing && !itemSpawninterval){
+                if (ongoing && !itemSpawninterval) {
                     itemSpawninterval = setInterval(() => {
                         spawnItems();
                     }, 3000);
 
                 }
-            } 
+            }
             else {
                 ongoing = false;
-                  
-                
-            if(!ongoing && itemSpawninterval){
+
+
+                if (!ongoing && itemSpawninterval) {
                     clearInterval(itemSpawninterval);
-                    itemSpawninterval = null;}
+                    itemSpawninterval = null;
+                }
             }
             //checks to see if zone should start or not
             if (ongoing) {
-                    zone.active = true;
-                    zone.startTime = Date.now();   
-                    zone.duration = ZONE_DURATION;
-                    console.log("ZONE STARTED");
-                }
+                zone.active = true;
+                zone.startTime = Date.now();
+                zone.duration = ZONE_DURATION;
+                console.log("ZONE STARTED");
+            }
             if (!ongoing) {
-                    zone.active = false;
-                    console.log("ZONE STOPPED");
-                }
+                zone.active = false;
+                console.log("ZONE STOPPED");
+            }
             break;
         }
-    
+
         case 'movement': {
             if (!playerInput[msg.socketId] || !players[msg.socketId]) return;
             players[msg.socketId].sequenceNumber = msg.sequenceNumber;
@@ -217,7 +218,7 @@ function handleInput(msg) {
             players[msg.socketId].dy = msg.dy;
             break;
         }
-   
+
         case 'pickupItem': {
             const idx = items.findIndex(item => item.id === msg.itemId);
             if (idx !== -1) {
@@ -231,30 +232,30 @@ function handleInput(msg) {
             break;
         }
         case 'zone': {
-        const player = players[msg.socketId];
-        if (!player || !player.alive) return;
+            const player = players[msg.socketId];
+            if (!player || !player.alive) return;
 
-        // Only damage if client says they are inside the zone
-        if (msg.state === false && ongoing === true) {
-           
+            // Only damage if client says they are inside the zone
+            if (msg.state === false && ongoing === true) {
 
-            if (player.health <= 0 && player.alive) {
-            player.alive = false;
 
-            const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-            parentPort.postMessage({ type: 'death', socketId: msg.socketId, placement: aliveplayers.length + 1 });
+                if (player.health <= 0 && player.alive) {
+                    player.alive = false;
 
-            if (aliveplayers.length === 1) {
-                const winner = aliveplayers[0];
-                players[winner].alive = false;
-                parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                    const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                    parentPort.postMessage({ type: 'death', socketId: msg.socketId, placement: aliveplayers.length + 1 });
+
+                    if (aliveplayers.length === 1) {
+                        const winner = aliveplayers[0];
+                        players[winner].alive = false;
+                        parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                    }
+
+                }
+                player.health -= 0.2;
             }
-             
-            }
-            player.health -= 0.2;
+            break;
         }
-        break;
-        }        
         case 'spellCast': {
             const player = players[msg.socketId];
             if (!player || player.alive === false) return;
@@ -286,8 +287,8 @@ function handleInput(msg) {
                 bouncesRemaining: stats.maxBounces
             };
             // Notify clients about new projectile
-            parentPort.postMessage({ 
-                type: 'projectileSpawned', 
+            parentPort.postMessage({
+                type: 'projectileSpawned',
                 projectileId,
                 projectile: backendProjectiles[projectileId]
             });
@@ -297,40 +298,40 @@ function handleInput(msg) {
         case 'util_use': {
             const player = players[msg.socketId];
             if (!player) return;
-            console.log("player speed:", player.speed )
-            if(msg.util === "health"){
+            console.log("player speed:", player.speed)
+            if (msg.util === "health") {
                 console.log("before:", player.health)
                 player.health += msg.amount;
-                if(player.health > 100){
+                if (player.health > 100) {
                     player.health = 100;
                 }
                 console.log("after:", player.health)
-              }
-            if(msg.util == "haste"){
+            }
+            if (msg.util == "haste") {
                 player.speed = player.speed * 3;
             }
             break;
         }
 
         case 'remove_util': {
-                    const player = players[msg.socketId];
-                    if (!player) return;
-                    if(msg.util == "haste"){
-                        player.speed = basespeed;
-              }
-              break;
+            const player = players[msg.socketId];
+            if (!player) return;
+            if (msg.util == "haste") {
+                player.speed = basespeed;
+            }
+            break;
         }
 
         case 'placeTrap': {
             const player = players[msg.socketId];
             if (!player || !player.alive) return;
             if (!player.abilities || player.abilities.length === 0) return;
-            
+
             const trapIndex = player.abilities.findIndex(a => a === msg.trapKey);
             if (trapIndex === -1) return;
 
             player.abilities.splice(trapIndex, 1);
-            
+
             const stats = trapStats[msg.trapKey] || trapStats.bear_trap;
             const trap = {
                 id: trapIdCounter++,
@@ -344,7 +345,7 @@ function handleInput(msg) {
                 active: true,
                 triggered: false
             };
-            
+
             traps.push(trap);
             parentPort.postMessage({ type: 'trapPlaced', trap });
             break;
@@ -367,22 +368,24 @@ function handleInput(msg) {
         }
         case 'delete_user': {
             const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-            if (aliveplayers[msg.socketId]  ) {
+            if (aliveplayers[msg.socketId]) {
+                console.log("Alive players:", aliveplayers)
+                console.log("Socket ID:", msg.socketId)
                 console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
                 delete playerInput[msg.socketId];
-                 
-               
 
-                if(aliveplayers.length === 1 ){
+
+
+                if (aliveplayers.length === 1) {
                     const winner = aliveplayers[0];
                     console.log("winner disoconnet:", winner)
                     players[winner].alive = false;
                     parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
 
-            }
-                if(aliveplayers.length === 0){
+                }
+                if (aliveplayers.length === 0) {
                     console.log("alicve player = 0, restart game")
                     handleInput({ type: 'input', action: 'restart_game' })
                 }
@@ -410,7 +413,7 @@ function handleInput(msg) {
                 active: zone.active,
                 startTime: zone.startTime,
                 duration: zone.duration
-                }
+            }
         }
     });
 }
@@ -438,9 +441,9 @@ function gameloop() {
         if (player.alive === false) continue;
 
         if (player.immobilizedUntil && Date.now() < player.immobilizedUntil) {
-            continue; 
+            continue;
         }
-        
+
         let dx = input.dx;
         let dy = input.dy;
         if (dx !== 0 && dy !== 0) {
@@ -448,19 +451,19 @@ function gameloop() {
             dx *= inv;
             dy *= inv;
         }
-        
+
         const speedMultiplier = player.effectSpeedMultiplier ?? 1;
         const effectiveSpeed = player.speed * speedMultiplier;
         const moveX = dx * effectiveSpeed * 0.015;
         const moveY = dy * effectiveSpeed * 0.015;
-        
+
         // Try X movement first
         const oldX = player.x;
         player.x += moveX;
         if (wallCollison({ objectLayers: [map] }, player)) {
             player.x = oldX; // Revert X if collision
         }
-        
+
         // Try Y movement separately
         const oldY = player.y;
         player.y += moveY;
@@ -482,7 +485,7 @@ function gameloop() {
                 items.splice(i, 1);
                 console.log("remove item pickup worker:", item, "player pick up", pid)
                 parentPort.postMessage({
-                    type: "removeItem", 
+                    type: "removeItem",
                     pid: pid,
                     item: item
                 })
@@ -491,11 +494,11 @@ function gameloop() {
             }
         }
     }
-    
+
     for (let i = traps.length - 1; i >= 0; i--) {
         const trap = traps[i];
         if (!trap.active || trap.triggered) continue;
-        
+
         for (const pid in players) {
             const player = players[pid];
             if (!player.alive) continue;
@@ -504,8 +507,8 @@ function gameloop() {
             const dx = player.x - trap.x;
             const dy = player.y - trap.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist < trap.triggerRadius + 8) { 
+
+            if (dist < trap.triggerRadius + 8) {
                 trap.triggered = true;
                 trap.active = false;
 
@@ -530,7 +533,7 @@ function gameloop() {
             }
         }
     }
-    
+
     for (const id in backendProjectiles) {
         const projectile = backendProjectiles[id];
         const direction = projectile.spellDirection;
@@ -539,7 +542,7 @@ function gameloop() {
 
         const oldX = projectile.x;
         const oldY = projectile.y;
-        
+
         projectile.x += dx * projectile.speed * 0.015;
         projectile.y += dy * projectile.speed * 0.015;
 
@@ -596,7 +599,7 @@ function gameloop() {
 
                     players[pid].health -= finalDamage;
 
-                    if (players[pid].health <= 0 && players[pid].alive === true ) {
+                    if (players[pid].health <= 0 && players[pid].alive === true) {
                         players[pid].alive = false;
                         const aliveplayers = Object.keys(players).filter(id => players[id].alive);
                         parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
@@ -606,11 +609,11 @@ function gameloop() {
                             parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
                         }
                     }
-                
+
                 }
             }
 
-         
+
 
             if (projectile.bouncesRemaining > 0) {
                 const player = players[hitPlayerId];
@@ -624,7 +627,7 @@ function gameloop() {
             }
         }
 
-        
+
 
         if (wallHit || playerHit) {
             if (projectile.bouncesRemaining > 0) {
@@ -633,16 +636,16 @@ function gameloop() {
                 projectile.x += projectile.spellDirection.x * 2;
                 projectile.y += projectile.spellDirection.y * 2;
 
-                parentPort.postMessage({ 
-                    type: 'projectileBounced', 
+                parentPort.postMessage({
+                    type: 'projectileBounced',
                     projectileId: id,
                     x: projectile.x,
                     y: projectile.y,
                     newDirection: projectile.spellDirection
                 });
             } else {
-                parentPort.postMessage({ 
-                    type: 'projectileDeleted', 
+                parentPort.postMessage({
+                    type: 'projectileDeleted',
                     projectileId: id,
                     x: projectile.x,
                     y: projectile.y,
@@ -665,10 +668,10 @@ function gameloop() {
 
 setInterval(() => {
     if (windscounter == 0) {
-        activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1 , "wind");
+        activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1, "wind");
         windscounter++;
         console.log("created wind");
-    } else if (windscounter == 1 && activeeffects[0]){
+    } else if (windscounter == 1 && activeeffects[0]) {
         activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
     }
@@ -682,15 +685,15 @@ setInterval(() => {
 }, 12000);
 
 function getRandomWalkableTile() {
-   
-      if (!mapheight || !mapwidth) return { x: 5, y: 5 };
-        const x = Math.floor(Math.random() * mapwidth)
-        const y = Math.floor(Math.random() * mapheight)
-      return { x, y };
-    }
 
-function spawnItems(){
-    if(!map) return;
+    if (!mapheight || !mapwidth) return { x: 5, y: 5 };
+    const x = Math.floor(Math.random() * mapwidth)
+    const y = Math.floor(Math.random() * mapheight)
+    return { x, y };
+}
+
+function spawnItems() {
+    if (!map) return;
 
     //console.log("items spawned backend")
     const pos = getRandomWalkableTile();
@@ -710,15 +713,15 @@ function spawnItems(){
     }
 
     const item = {
-        id : itemIDcounter++,
-        x: pos.x * TILE_SIZE + TILE_SIZE /2,
-        y: pos.y * TILE_SIZE + TILE_SIZE /2,
+        id: itemIDcounter++,
+        x: pos.x * TILE_SIZE + TILE_SIZE / 2,
+        y: pos.y * TILE_SIZE + TILE_SIZE / 2,
         type,
         key
     }
     //console.log("workerroom item spawn:", item)
     items.push(item)
-    parentPort.postMessage({type: "spawnItems", item})
+    parentPort.postMessage({ type: "spawnItems", item })
 }
 
 setInterval(() => {
@@ -780,7 +783,7 @@ parentPort.on('message', (msg) => {
         //console.log("map width:", msg.mapwidth)
         mapwidth = msg.mapwidth;
         mapheight = msg.mapheight;
-            } else if (msg.type === 'shutdown') {
+    } else if (msg.type === 'shutdown') {
         process.exit(0);
     }
 });
