@@ -72,11 +72,6 @@ export default function Game() {
 
 
   useEffect(() => {
-    if (!gameStartedRef.current) {
-      socket.emit("gameStart", roomkey);
-      gameStartedRef.current = true;
-    }
-
     const canvas = canvasRef.current;
     const scale = window.devicePixelRatio || 1; // Define early for all scaling
     canvas.width = Math.floor(window.innerWidth * scale);
@@ -91,6 +86,13 @@ export default function Game() {
     ctx.imageSmoothingEnabled = false;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     const tilesetImage = new Image();
+    let tilesetLoaded = false;
+    tilesetImage.onload = () => {
+      tilesetLoaded = true;
+    };
+    tilesetImage.onerror = () => {
+      console.error("Failed to load tileset image:", wallsFloor);
+    };
     tilesetImage.src = wallsFloor;
     
     // Create player overlay canvas (renders above trap GIFs)
@@ -229,6 +231,11 @@ export default function Game() {
       animationFrameRef.current = requestAnimationFrame(loop);
     }
     socket.on("map", mapOn);
+
+    if (!gameStartedRef.current) {
+      socket.emit("gameStart", roomkey);
+      gameStartedRef.current = true;
+    }
     const frontendPlayers = frontendPlayersRef.current;
     const playerInputs = playerInputsRef.current;
 
@@ -753,7 +760,9 @@ export default function Game() {
         const width = map.layers[0]?.grid?.[0]?.length || 0;
         if (height === 0 || width === 0) return;
         const tileWH = 16;
-        const tilesPerRow = tilesetImage.width / 16;
+        if (!tilesetLoaded || !tilesetImage.naturalWidth) return;
+        const tilesPerRow = Math.floor(tilesetImage.naturalWidth / tileWH);
+        if (tilesPerRow <= 0) return;
 
         // console.log("grid test sx:",  (36 % tilesPerRow)*16); //y
         // console.log("grid test sy:",  Math.floor(36/tilesPerRow)*16);

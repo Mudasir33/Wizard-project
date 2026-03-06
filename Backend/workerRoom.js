@@ -18,7 +18,7 @@ const utilitykeys = ["haste", "health"]
 const trapkeys = ["bear_trap", "fire_trap"]
 const TILE_SIZE = 16;
 let spawn_x = 50;
-const basespeed = 100;
+const basespeed = 150;
 let mapwidth = null;
 let mapheight = null;
 let mapGrid = null;
@@ -104,7 +104,7 @@ function handleInput(msg) {
                 health: 100,
                 alive: true,
                 id: index + 1,
-                speed: 200,
+                speed: basespeed,
                 sequenceNumber: 0,
                 dx: 0,
                 dy: 0,
@@ -312,7 +312,7 @@ function handleInput(msg) {
                 console.log("after:", player.health)
             }
             if (msg.util == "haste") {
-                player.speed = player.speed * 3;
+                player.speed = player.speed * 2;
             }
             break;
         }

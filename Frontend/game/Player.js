@@ -23,7 +23,7 @@ export class Player {
     this.alive = true;
     this.image = new Image();
     this.image.src =  this.setImage(color);
-    this.speed = 100;
+    this.speed = 150;
     this.dx = 0;
     this.dy = 0;
     this.direction = 'idle'; // idle, up, down, left, right
