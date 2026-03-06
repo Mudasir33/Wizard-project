@@ -141,6 +141,7 @@ async function startServer() {
                 console.log(clonedMap.layers[0].height)
                 roomWorkers[room].postMessage({ type: 'set_map', 
                         map: JSON.parse(JSON.stringify(clonedMap.objectLayers[0])),
+                        grid: JSON.parse(JSON.stringify(clonedMap.layers[0].grid)),
                         mapwidth: clonedMap.layers[0].grid[0].length,
                         mapheight: clonedMap.layers[0].grid.length
                     });
