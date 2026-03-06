@@ -71,6 +71,8 @@ export class Player {
         return Character_animation_sheet_white;
       case 'yellow':
         return Character_animation_sheet_yellow;
+      default:
+        return Character_animation_sheet_blue;
     }
   }
 

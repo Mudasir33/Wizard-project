@@ -14,7 +14,7 @@ export default function Game_death({placement, won, onSpectate}){
     
 function back(){
   socket.emit("delete_user", roomkey)
-  socket.emit("restart_game",(roomkey))
+  
     
   nav("/")
 }

@@ -78,12 +78,35 @@ export default function Game() {
     }
 
     const canvas = canvasRef.current;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const scale = window.devicePixelRatio || 1; // Define early for all scaling
+    canvas.width = Math.floor(window.innerWidth * scale);
+    canvas.height = Math.floor(window.innerHeight * scale);
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+    canvas.style.position = 'absolute';
+    canvas.style.left = '0';
+    canvas.style.top = '0';
+    canvas.style.zIndex = '1';
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
     const tilesetImage = new Image();
     tilesetImage.src = wallsFloor;
+    
+    // Create player overlay canvas (renders above trap GIFs)
+    const playerOverlay = document.createElement('canvas');
+    playerOverlay.width = canvas.width;
+    playerOverlay.height = canvas.height;
+    playerOverlay.style.width = canvas.style.width;
+    playerOverlay.style.height = canvas.style.height;
+    playerOverlay.style.position = 'absolute';
+    playerOverlay.style.left = '0';
+    playerOverlay.style.top = '0';
+    playerOverlay.style.zIndex = '10'; // Above trap GIFs (z-index 5)
+    playerOverlay.style.pointerEvents = 'none';
+    canvas.parentElement.appendChild(playerOverlay);
+    const playerCtx = playerOverlay.getContext('2d');
+    playerCtx.imageSmoothingEnabled = false;
     
     //// draw zone on offscreen canvas
     var c = document.createElement("canvas");
@@ -152,7 +175,6 @@ export default function Game() {
       buttonsRef.current.b2.Eventen();
       buttonsRef.current.b3.Eventen();
     }
-    const scale = window.devicePixelRatio;// Change to 1 on retina screens to see 
       
     function pixelRatio(params) {
 
@@ -168,6 +190,13 @@ export default function Game() {
       console.log("scala", canvas.height);
       
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      
+      // Also resize player overlay canvas
+      playerOverlay.style.width = `${vw}px`;
+      playerOverlay.style.height = `${vh}px`;
+      playerOverlay.width = Math.floor(vw * scale);
+      playerOverlay.height = Math.floor(vh * scale);
+      
       layoutUI();
     }
     
@@ -459,9 +488,13 @@ export default function Game() {
       console.log("Trap triggered:", trapId, "victim:", victimId);
       const trap = trapsRef.current.find(t => t.id === trapId);
       if (trap) {
-        trap.trigger();
-        // Remove trap after animation
+        trap.trigger(canvas);
+        // Remove trap after animation (destroy cleans up DOM elements)
         setTimeout(() => {
+          const trapToRemove = trapsRef.current.find(t => t.id === trapId);
+          if (trapToRemove) {
+            trapToRemove.destroy();
+          }
           trapsRef.current = trapsRef.current.filter(t => t.id !== trapId);
         }, trap.triggerAnimationDuration || 1500);
       }
@@ -674,6 +707,10 @@ export default function Game() {
         ctx.fillStyle = "white";
         ctx.fillRect(-10, -10, canvas.width * scaleup_constant, canvas.height * scaleup_constant);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+        
+        // Clear player overlay - reset transform first, then clear, then restore
+        playerCtx.setTransform(1, 0, 0, 1, 0, 0);
+        playerCtx.clearRect(0, 0, playerOverlay.width, playerOverlay.height);
 
         // Center camera on player (same behavior on mobile and desktop)
         const cameraOffsetX = canvas.width / 2;
@@ -694,9 +731,17 @@ export default function Game() {
             cameraOffsetX - mapCenterX * scaleup_constant,
             cameraOffsetY - mapCenterY * scaleup_constant
           );
+          playerCtx.translate(
+            cameraOffsetX - mapCenterX * scaleup_constant,
+            cameraOffsetY - mapCenterY * scaleup_constant
+          );
         } else {
           if (!frontendPlayers[socket.id]) return;
           ctx.translate(
+            cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
+            cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
+          );
+          playerCtx.translate(
             cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant,
             cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant
           );
@@ -775,16 +820,31 @@ export default function Game() {
         })
 
         // Draw placed traps (before players so players appear on top)
+        // Calculate camera translation for GIF positioning
+        let cameraPosX, cameraPosY;
+        if (isSpectatingRef.current) {
+          const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
+          const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
+          cameraPosX = cameraOffsetX - mapCenterX * scaleup_constant;
+          cameraPosY = cameraOffsetY - mapCenterY * scaleup_constant;
+        } else {
+          cameraPosX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
+          cameraPosY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
+        }
+        
         trapsRef.current.forEach(trap => {
           if (trap.isActive) {
             trap.update(deltaTime);
             trap.draw(ctx, scaleup_constant);
+            // Update GIF element position for animated traps
+            trap.updateGifPosition(cameraPosX, cameraPosY, scaleup_constant, scale);
           }
         });
 
+        // Draw players on overlay canvas (above trap GIFs)
         for (const id in frontendPlayers) {
           const player = frontendPlayers[id];
-          player.draw(ctx, scaleup_constant);
+          player.draw(playerCtx, scaleup_constant);
         }
 
         // Update projectiles locally (position calculated client-side)
@@ -806,7 +866,7 @@ export default function Game() {
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
         }
-        if (zone.active) {
+        if (zone?.active) {
 
         const elapsed = Date.now() - zone.startTime;
         const progress = Math.min(elapsed / zone.duration, 1);   
@@ -833,8 +893,12 @@ export default function Game() {
         ctx.fill("evenodd");
         //console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
         
-        const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
-        socket.emit('zone', {state, roomkey});  
+        const currentPlayerForZone = frontendPlayers[socket.id];
+        // Spectators do not participate in zone damage checks
+        if (!isSpectatingRef.current && currentPlayerForZone) {
+          const state = isBlue(currentPlayerForZone, centerW, centerH, smallRadius);
+          socket.emit('zone', { state, roomkey });
+        }
       }
     
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
@@ -1085,6 +1149,12 @@ export default function Game() {
        console.log("you won")
       setPlayercount(data)
       console.log(data)
+      // If spectator, return to spectator room instead of showing winner screen
+      /*if (isSpectatingRef.current) {
+        console.log("Spectator game ended, returning to spectator room");
+        nav("/spectator-room", { state: roomkey });
+        return;
+      }*/
         setwon(true);
        setdeath(true);
     }
@@ -1124,11 +1194,16 @@ export default function Game() {
 
       canvas.removeEventListener('click', handleCanvasClick);
       
+      // Remove player overlay canvas
+      playerOverlay.remove();
+      
       frontendPlayersRef.current = {};
       playerInputsRef.current = [];
       frontEndProjectilesRef.current = {};
       itemRef.current = [];
       effectsRef.current = [];
+      // Clean up trap DOM elements before clearing
+      trapsRef.current.forEach(trap => trap.destroy());
       trapsRef.current = [];
       keysRef.current = {};
       activeUtilitiesRef.current = [];

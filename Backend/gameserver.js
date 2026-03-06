@@ -7,6 +7,7 @@ const server = http.createServer(app);
 const mapCreation = require('./map.js');
 const path = require('path');
 
+app.use(express.static(path.join(__dirname, '../Public')));
 app.use(express.static('Backend'));
 app.use(express.static(path.join(__dirname, '../Frontend/game')));
 app.use("/Assets", express.static(path.join(__dirname, "../Assets")));
@@ -120,8 +121,6 @@ function startRoomWorker(roomName, initialState) {
     startRoomWorker(room, initialState);
 });
 
-app.use(express.static('Public'));
-
 async function startServer() {
     const Map2d = await mapCreation();
     io.on('connection', (socket) => {
@@ -152,7 +151,7 @@ async function startServer() {
         });
         socket.on('gameStart', (room) => {
             io.to(room).emit('map', Map2d);
-            io.to(room).emit('updatePlayers', sessions[room]?.players[socket.id]);
+//            io.to(room).emit('updatePlayers', sessions[room]?.players || {});
         });
         socket.on('disconnect', (reason) => {
             for (const room in sessions) {

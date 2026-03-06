@@ -366,8 +366,15 @@ function handleInput(msg) {
             break;
         }
         case 'delete_user': {
+            console.log("delete user")
             const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+<<<<<<< HEAD
             if (players[msg.socketId]  ) {
+=======
+            if (players[msg.socketId]) {
+                console.log("Alive players:", aliveplayers)
+                console.log("Socket ID:", msg.socketId)
+>>>>>>> d7a6539bbe23110315eb46d81fbb2fd4a3ef425c
                 console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
@@ -375,14 +382,14 @@ function handleInput(msg) {
                  
                
 
-                if(aliveplayers.length === 1 ){
+                if (aliveplayers.length === 1) {
                     const winner = aliveplayers[0];
                     console.log("winner disoconnet:", winner)
                     players[winner].alive = false;
                     parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
 
             }
-                if(aliveplayers.length === 0){
+                if (aliveplayers.length === 0) {
                     console.log("alicve player = 0, restart game")
                     handleInput({ type: 'input', action: 'restart_game' })
                 }
