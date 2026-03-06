@@ -57,9 +57,9 @@ export const utility_list = {
     haste: {
         name: "haste",
         displayName: "Haste",
-        description: "Triples movement speed for 5 seconds",
+        description: "double movement speed for 5 seconds",
         duration: 5,
-        amount: 3,
+        amount: 2,
         instant: false,
         texture: yellow_potion,
         pickupTexture: yellow_potion
