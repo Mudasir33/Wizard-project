@@ -1108,11 +1108,11 @@ export default function Game() {
       setPlayercount(data)
       console.log(data)
       // If spectator, return to spectator room instead of showing winner screen
-      if (isSpectatingRef.current) {
+      /*if (isSpectatingRef.current) {
         console.log("Spectator game ended, returning to spectator room");
         nav("/spectator-room", { state: roomkey });
         return;
-      }
+      }*/
         setwon(true);
        setdeath(true);
     }
