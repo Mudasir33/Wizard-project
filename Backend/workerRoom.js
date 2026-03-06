@@ -163,6 +163,8 @@ function handleInput(msg) {
                 itemSpawninterval = null;
             }
             players = {};
+            console.log("restart game players:", players);
+            
             break;
         }
 
@@ -691,7 +693,18 @@ function getRandomWalkableTile() {
 
 function spawnItems(){
     if(!map) return;
+    let xPos = Math.floor(  Math.random() * 50);
+    let yPos = Math.floor(  Math.random() * 50);
+    let tile = msg.Map2d.layers[0].grid[yPos][xPos];
 
+    //loops until they have an player postion is within within tile id 138 (light gray tile)
+    while (!tile || tile.id !== 138) {
+
+        
+        xPos = Math.floor(  Math.random() * 50);
+        yPos =Math.floor(  Math.random() * 50);
+        tile = msg.Map2d.layers[0].grid[yPos][xPos];
+    }
     //console.log("items spawned backend")
     const pos = getRandomWalkableTile();
     //console.log("position item spawn:", pos)
@@ -711,8 +724,8 @@ function spawnItems(){
 
     const item = {
         id : itemIDcounter++,
-        x: pos.x * TILE_SIZE + TILE_SIZE /2,
-        y: pos.y * TILE_SIZE + TILE_SIZE /2,
+        x: ypos*16,
+        y: xPos*16,
         type,
         key
     }
