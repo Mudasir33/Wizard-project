@@ -367,7 +367,7 @@ function handleInput(msg) {
         }
         case 'delete_user': {
             const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-            if (aliveplayers[msg.socketId]  ) {
+            if (players[msg.socketId]  ) {
                 console.log("delete user")
                 players[msg.socketId].ready = false;
                 delete players[msg.socketId];
@@ -582,6 +582,9 @@ function gameloop() {
             const aoeRadius = projectile.aoeRadius || 0;
             const damage = projectile.damage || 10;
 
+
+        const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+
             for (const pid in players) {
                 if (pid === projectile.playerId || players[pid].alive === false) continue;
 
@@ -598,10 +601,11 @@ function gameloop() {
 
                     if (players[pid].health <= 0 && players[pid].alive === true ) {
                         players[pid].alive = false;
-                        const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                
                         parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
                         if (aliveplayers.length === 1) {
                             const winner = aliveplayers[0];
+                            console.log("winner :", winner)
                             players[winner].alive = false;
                             parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
                         }
