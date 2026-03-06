@@ -460,8 +460,12 @@ export default function Game() {
       const trap = trapsRef.current.find(t => t.id === trapId);
       if (trap) {
         trap.trigger();
-        // Remove trap after animation
+        // Remove trap after animation (destroy cleans up DOM elements)
         setTimeout(() => {
+          const trapToRemove = trapsRef.current.find(t => t.id === trapId);
+          if (trapToRemove) {
+            trapToRemove.destroy();
+          }
           trapsRef.current = trapsRef.current.filter(t => t.id !== trapId);
         }, trap.triggerAnimationDuration || 1500);
       }
@@ -775,10 +779,24 @@ export default function Game() {
         })
 
         // Draw placed traps (before players so players appear on top)
+        // Calculate camera translation for GIF positioning
+        let cameraPosX, cameraPosY;
+        if (isSpectatingRef.current) {
+          const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
+          const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
+          cameraPosX = cameraOffsetX - mapCenterX * scaleup_constant;
+          cameraPosY = cameraOffsetY - mapCenterY * scaleup_constant;
+        } else {
+          cameraPosX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
+          cameraPosY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
+        }
+        
         trapsRef.current.forEach(trap => {
           if (trap.isActive) {
             trap.update(deltaTime);
             trap.draw(ctx, scaleup_constant);
+            // Update GIF element position for animated traps
+            trap.updateGifPosition(cameraPosX, cameraPosY, scaleup_constant, scale);
           }
         });
 
@@ -806,7 +824,7 @@ export default function Game() {
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
         }
-        if (zone.active) {
+        if (zone?.active) {
 
         const elapsed = Date.now() - zone.startTime;
         const progress = Math.min(elapsed / zone.duration, 1);   
@@ -833,8 +851,12 @@ export default function Game() {
         ctx.fill("evenodd");
         //console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
         
-        const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
-        socket.emit('zone', {state, roomkey});  
+        const currentPlayerForZone = frontendPlayers[socket.id];
+        // Spectators do not participate in zone damage checks
+        if (!isSpectatingRef.current && currentPlayerForZone) {
+          const state = isBlue(currentPlayerForZone, centerW, centerH, smallRadius);
+          socket.emit('zone', { state, roomkey });
+        }
       }
     
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
@@ -1085,6 +1107,12 @@ export default function Game() {
        console.log("you won")
       setPlayercount(data)
       console.log(data)
+      // If spectator, return to spectator room instead of showing winner screen
+      if (isSpectatingRef.current) {
+        console.log("Spectator game ended, returning to spectator room");
+        nav("/spectator-room", { state: roomkey });
+        return;
+      }
         setwon(true);
        setdeath(true);
     }
@@ -1129,6 +1157,8 @@ export default function Game() {
       frontEndProjectilesRef.current = {};
       itemRef.current = [];
       effectsRef.current = [];
+      // Clean up trap DOM elements before clearing
+      trapsRef.current.forEach(trap => trap.destroy());
       trapsRef.current = [];
       keysRef.current = {};
       activeUtilitiesRef.current = [];
