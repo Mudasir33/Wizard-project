@@ -460,8 +460,12 @@ export default function Game() {
       const trap = trapsRef.current.find(t => t.id === trapId);
       if (trap) {
         trap.trigger();
-        // Remove trap after animation
+        // Remove trap after animation (destroy cleans up DOM elements)
         setTimeout(() => {
+          const trapToRemove = trapsRef.current.find(t => t.id === trapId);
+          if (trapToRemove) {
+            trapToRemove.destroy();
+          }
           trapsRef.current = trapsRef.current.filter(t => t.id !== trapId);
         }, trap.triggerAnimationDuration || 1500);
       }
@@ -775,10 +779,24 @@ export default function Game() {
         })
 
         // Draw placed traps (before players so players appear on top)
+        // Calculate camera translation for GIF positioning
+        let cameraPosX, cameraPosY;
+        if (isSpectatingRef.current) {
+          const mapCenterX = (map.layers[0]?.grid?.[0]?.length || 1) * TILE_SIZE / 2;
+          const mapCenterY = (map.layers[0]?.grid?.length || 1) * TILE_SIZE / 2;
+          cameraPosX = cameraOffsetX - mapCenterX * scaleup_constant;
+          cameraPosY = cameraOffsetY - mapCenterY * scaleup_constant;
+        } else {
+          cameraPosX = cameraOffsetX - (frontendPlayers[socket.id]?.x || 0) * scaleup_constant;
+          cameraPosY = cameraOffsetY - (frontendPlayers[socket.id]?.y || 0) * scaleup_constant;
+        }
+        
         trapsRef.current.forEach(trap => {
           if (trap.isActive) {
             trap.update(deltaTime);
             trap.draw(ctx, scaleup_constant);
+            // Update GIF element position for animated traps
+            trap.updateGifPosition(cameraPosX, cameraPosY, scaleup_constant, scale);
           }
         });
 
@@ -1129,6 +1147,8 @@ export default function Game() {
       frontEndProjectilesRef.current = {};
       itemRef.current = [];
       effectsRef.current = [];
+      // Clean up trap DOM elements before clearing
+      trapsRef.current.forEach(trap => trap.destroy());
       trapsRef.current = [];
       keysRef.current = {};
       activeUtilitiesRef.current = [];
