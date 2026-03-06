@@ -1,5 +1,5 @@
 class enviormentEffects {
-    static SPIDER_WEB_RADIUS = 256;
+    static SPIDER_WEB_RADIUS = 150;
     static SPIDER_WEB_SLOW_MULTIPLIER = 0.5;
 
     constructor(x, y, effect, radius = 0) {
@@ -51,15 +51,15 @@ class enviormentEffects {
                 let windY = 0;
 
                 if (this.x > 0) {
-                    windX = 0.1 * Math.random();
+                    windX = 0.4 + 0.3 * Math.random();
                 } else if (this.x < 0) {
-                    windX = -0.1 * Math.random();
+                    windX = -0.4 - 0.3 * Math.random();
                 }
 
                 if (this.y > 0) {
-                    windY = 0.3 * Math.random();
+                    windY = 0.6 + 0.4 * Math.random();
                 } else if (this.y < 0) {
-                    windY = -0.3 * Math.random();
+                    windY = -0.6 - 0.4 * Math.random();
                 }
 
                 const oldX = player.x;
