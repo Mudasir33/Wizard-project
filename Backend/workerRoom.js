@@ -31,6 +31,18 @@ let traps = [];
 let activeeffects = {};
 let windscounter = 0;
 let num = 0;
+let windActive = false;
+let windStartTime = 0;
+let currentWindDuration = 0;
+
+const WIND_DURATION_MIN = 3000;
+const WIND_DURATION_MAX = 7000;
+const WIND_INTERVAL_MIN = 15000;
+const WIND_INTERVAL_MAX = 30000;
+
+function randomRange(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 const trapStats = {
     bear_trap: { damage: 20, immobilizeDuration: 3000, triggerRadius: 8, type: 'immobilize' },
@@ -137,6 +149,8 @@ function handleInput(msg) {
             }
             windscounter = 0;
             num = 0;
+            windActive = false;
+            windStartTime = 0;
 
             for (const id in players) {
                 const player = players[id];
@@ -688,8 +702,6 @@ function gameloop() {
                 }
             }
 
-
-
             if (projectile.bouncesRemaining > 0) {
                 const player = players[hitPlayerId];
                 const reflectDx = projectile.x - player.x;
@@ -701,8 +713,6 @@ function gameloop() {
                 }
             }
         }
-
-
 
         if (wallHit || playerHit) {
             if (projectile.bouncesRemaining > 0) {
@@ -730,7 +740,6 @@ function gameloop() {
             }
             continue;
         }
-
     }
     for (const effectid in activeeffects) {
         const effect = activeeffects[effectid];
@@ -739,20 +748,39 @@ function gameloop() {
     }
 }
 
-// loop for creating wind effect every 10 sec
-
-setInterval(() => {
+function startWind() {
+    const now = Date.now();
+    windActive = true;
+    windStartTime = now;
+    currentWindDuration = randomRange(WIND_DURATION_MIN, WIND_DURATION_MAX);
+    
     if (windscounter == 0) {
         activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1, "wind");
         windscounter++;
-        console.log("created wind");
-    } else if (windscounter == 1 && activeeffects[0]) {
+        console.log(`Wind started (duration: ${currentWindDuration}ms)`);
+    } else if (activeeffects[0]) {
         activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
         activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
+        activeeffects[0].effect = "wind";
+        console.log(`Wind direction changed (duration: ${currentWindDuration}ms)`);
     }
     num++;
-    //console.log(activeeffects);
-}, 10000);
+
+    setTimeout(stopWind, currentWindDuration);
+}
+
+function stopWind() {
+    windActive = false;
+    if (activeeffects[0] && activeeffects[0].effect === "wind") {
+        activeeffects[0].effect = "wind_inactive";
+        console.log("Wind stopped");
+    }
+    const nextInterval = randomRange(WIND_INTERVAL_MIN, WIND_INTERVAL_MAX);
+    console.log(`Next wind in ${nextInterval}ms`);
+    setTimeout(startWind, nextInterval);
+}
+
+setTimeout(startWind, randomRange(WIND_INTERVAL_MIN, WIND_INTERVAL_MAX));
 
 setInterval(() => {
     if (!map || !mapwidth || !mapheight) return;
@@ -770,9 +798,7 @@ function getRandomWalkableTile() {
 
 function spawnItems(){
     if(!map) return;
-    //console.log("items spawned backend")
     const pos = getRandomWalkableTile();
-    //console.log("position item spawn:", pos)
 
     const rand = Math.random();
     let type, key;
