@@ -31,17 +31,9 @@ let activeeffects = {};
 let windscounter = 0;
 let num = 0;
 
-// Trap stats configuration
 const trapStats = {
     bear_trap: { damage: 20, immobilizeDuration: 3000, triggerRadius: 8, type: 'immobilize' },
-    fire_trap: { 
-        damage: 5,           // DoT damage per tick
-        triggerRadius: 16, 
-        type: 'dot',
-        dotInterval: 500,     // Damage every 0.5 seconds
-        burnDuration: 3000,   // Burn continues 3 seconds after leaving
-        activeDuration: 4500  // Trap stays active for 4.5 seconds
-    }
+    fire_trap: { damage: 5, triggerRadius: 16, type: 'dot', dotInterval: 500, burnDuration: 3000, activeDuration: 4500}
 };
 
 const ZONE_DURATION = 240000;
@@ -483,21 +475,17 @@ function gameloop() {
             player.y = oldY; // Revert Y if collision
         }
     }
-    
-    // Process burning debuffs (fire trap DoT)
+
     for (const pid in players) {
         const player = players[pid];
         if (!player.alive || !player.burning) continue;
-        
         const now = Date.now();
-        
-        // Check if burn has expired
+
         if (now > player.burning.expiresAt) {
             delete player.burning;
             continue;
         }
-        
-        // Apply tick damage
+
         if (now - player.burning.lastTick >= player.burning.interval) {
             player.burning.lastTick = now;
             player.health -= player.burning.damage;
@@ -542,10 +530,8 @@ function gameloop() {
     for (let i = traps.length - 1; i >= 0; i--) {
         const trap = traps[i];
         const stats = trapStats[trap.key] || trapStats.bear_trap;
-        
-        // Handle fire trap (DoT type)
+
         if (stats.type === 'dot') {
-            // Remove if duration expired
             if (trap.triggered && Date.now() - trap.triggeredTime > stats.activeDuration) {
                 traps.splice(i, 1);
                 continue;
@@ -561,15 +547,13 @@ function gameloop() {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
                 if (dist < trap.triggerRadius + 8) {
-                    // First contact - trigger the trap
                     if (!trap.triggered) {
                         trap.triggered = true;
                         trap.triggeredTime = Date.now();
                         trap.active = true;
                         parentPort.postMessage({ type: 'trapTriggered', trapId: trap.id, victimId: pid });
                     }
-                    
-                    // Apply/refresh burning debuff
+
                     if (!player.burning) {
                         player.burning = {
                             damage: stats.damage,
@@ -578,15 +562,13 @@ function gameloop() {
                             expiresAt: Date.now() + stats.burnDuration
                         };
                     } else {
-                        // Refresh duration while in fire
                         player.burning.expiresAt = Date.now() + stats.burnDuration;
                     }
                 }
             }
             continue;
         }
-        
-        // Handle bear trap (immobilize type) - original behavior
+
         if (!trap.active || trap.triggered) continue;
 
         for (const pid in players) {

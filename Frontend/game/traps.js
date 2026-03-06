@@ -28,7 +28,7 @@ export class Trap {
         this.triggerAnimationDuration = type.triggerAnimationDuration || 1500;
     }
 
-    trigger() {
+    trigger(canvasElement = null) {
         if (!this.isActive) return;
         this.isTriggered = true;
         this.triggeredTime = Date.now();
@@ -39,8 +39,14 @@ export class Trap {
         this.gifElement.style.position = 'absolute';
         this.gifElement.style.pointerEvents = 'none';
         this.gifElement.style.imageRendering = 'pixelated';
-        this.gifElement.style.zIndex = '10';
-        document.body.appendChild(this.gifElement);
+        this.gifElement.style.zIndex = '5'; // Below player overlay canvas
+        
+        // Add to canvas parent if available, otherwise body
+        if (canvasElement && canvasElement.parentElement) {
+            canvasElement.parentElement.appendChild(this.gifElement);
+        } else {
+            document.body.appendChild(this.gifElement);
+        }
     }
 
     update(deltaTime) {
