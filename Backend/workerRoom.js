@@ -18,7 +18,7 @@ const utilitykeys = ["haste", "health"]
 const trapkeys = ["bear_trap", "fire_trap"]
 const TILE_SIZE = 16;
 let spawn_x = 50;
-const basespeed = 200;
+const basespeed = 100;
 let mapwidth = null;
 let mapheight = null;
 let mapGrid = null;
@@ -769,21 +769,10 @@ function getRandomWalkableTile() {
 
 
 function spawnItems(){
-    if(!map || !mapGrid) return;
-
-    let xPos = Math.floor(Math.random() * mapwidth);
-    let yPos = Math.floor(Math.random() * mapheight);
-    let tile = mapGrid[yPos]?.[xPos];
-    
-    let attempts = 0;
-    while ((!tile || tile.id !== 138) && attempts < 100) {
-        xPos = Math.floor(Math.random() * mapwidth);
-        yPos = Math.floor(Math.random() * mapheight);
-        tile = mapGrid[yPos]?.[xPos];
-        attempts++;
-    }
-    
-    if (attempts >= 100) return;
+    if(!map) return;
+    //console.log("items spawned backend")
+    const pos = getRandomWalkableTile();
+    //console.log("position item spawn:", pos)
 
     const rand = Math.random();
     let type, key;
@@ -800,8 +789,8 @@ function spawnItems(){
 
     const item = {
         id : itemIDcounter++,
-        x: xPos * TILE_SIZE + TILE_SIZE / 2,
-        y: yPos * TILE_SIZE + TILE_SIZE / 2,
+        x: pos.x * TILE_SIZE + TILE_SIZE / 2,
+        y: pos.y * TILE_SIZE + TILE_SIZE / 2,
         type,
         key
     }

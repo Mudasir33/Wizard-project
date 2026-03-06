@@ -1,5 +1,5 @@
 class enviormentEffects {
-    static SPIDER_WEB_RADIUS = 56;
+    static SPIDER_WEB_RADIUS = 256;
     static SPIDER_WEB_SLOW_MULTIPLIER = 0.5;
 
     constructor(x, y, effect, radius = 0) {
