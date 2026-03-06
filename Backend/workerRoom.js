@@ -10,7 +10,7 @@ let items = initialState.items ? JSON.parse(JSON.stringify(initialState.items)) 
 let map = initialState.map ? JSON.parse(JSON.stringify(initialState.map)) : null;
 let numready = initialState.numready || 0;
 let ongoing = initialState.ongoing || false;
-const playerbase_speed = 100;
+const playerbase_speed = 150;
 let itemSpawninterval = null;
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
 const spellkeys = ["fireball", "bouncing_shot"]
@@ -164,6 +164,9 @@ function handleInput(msg) {
                 clearInterval(itemSpawninterval);
                 itemSpawninterval = null;
             }
+
+            parentPort.postMessage({ type: 'syncItemsTraps', items, traps });
+
             players = {};
             console.log("restart game players:", players);
             

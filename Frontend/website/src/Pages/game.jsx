@@ -446,7 +446,44 @@ export default function Game() {
       })
     }
 
+    const syncItemsTraps = (serverItems = [], serverTraps = []) => {
+      itemRef.current = (Array.isArray(serverItems) ? serverItems : []).map((spawnItems) => {
+        let texture, pickupTexture;
+        if (spawnItems.type === "spell") {
+          texture = spell_list[spawnItems.key]?.texture;
+          pickupTexture = spell_list[spawnItems.key]?.pickupTexture;
+        } else if (spawnItems.type === "utility") {
+          texture = utility_list[spawnItems.key]?.texture;
+          pickupTexture = utility_list[spawnItems.key]?.pickupTexture;
+        } else if (spawnItems.type === "trap") {
+          texture = trap_list[spawnItems.key]?.pickupTexture;
+          pickupTexture = trap_list[spawnItems.key]?.pickupTexture;
+        }
+
+        return {
+          ...spawnItems,
+          active: true,
+          image: create_image(texture),
+          image_pickup: create_image(pickupTexture)
+        };
+      });
+
+      trapsRef.current.forEach(trap => trap.destroy());
+      trapsRef.current = (Array.isArray(serverTraps) ? serverTraps : []).map((trap) => {
+        const trapType = trap_list[trap.key];
+        if (!trapType) return null;
+        const syncedTrap = new Trap(trap.x, trap.y, trapType, trap.id, trap.ownerId);
+        syncedTrap.isActive = trap.active !== false;
+        syncedTrap.isTriggered = !!trap.triggered;
+        if (syncedTrap.isTriggered) {
+          syncedTrap.triggeredTime = trap.triggeredTime || Date.now();
+        }
+        return syncedTrap;
+      }).filter(Boolean);
+    }
+
     socket.on("spawnItems", spawnitems)
+    socket.on("syncItemsTraps", syncItemsTraps)
 
     const removeitem =(removed_item, pid)=>
     {
@@ -1190,6 +1227,7 @@ export default function Game() {
       socket.off("death",death)
       socket.off("winner", winner)
       socket.off("spawnItems", spawnitems)
+      socket.off("syncItemsTraps", syncItemsTraps)
       socket.off("removeItem", removeitem)
       socket.off("trapPlaced", onTrapPlaced)
       socket.off("trapTriggered", onTrapTriggered)

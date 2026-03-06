@@ -42,11 +42,13 @@ function startRoomWorker(roomName, initialState) {
             const clonedMap = msg.state.map ? JSON.parse(JSON.stringify(msg.state.map)) : null;
             const clonedEffects = msg.state.effects ? JSON.parse(JSON.stringify(msg.state.effects)) : [];
             const clonedItems = msg.state.items ? JSON.parse(JSON.stringify(msg.state.items)) : [];
+            const clonedTraps = msg.state.traps ? JSON.parse(JSON.stringify(msg.state.traps)) : [];
             sessions[roomName].players = clonedPlayers;
             sessions[roomName].move = clonedMove;
             sessions[roomName].map = clonedMap;
             sessions[roomName].effects = clonedEffects;
             sessions[roomName].items = clonedItems;
+            sessions[roomName].traps = clonedTraps;
             sessions[roomName].numready = msg.state.numready;
             let ongoing_change = ( sessions[roomName].ongoing !== msg.state.ongoing )
             sessions[roomName].ongoing = msg.state.ongoing;
@@ -80,6 +82,14 @@ function startRoomWorker(roomName, initialState) {
             io.sockets.sockets.get(msg.socketId)?.emit('death', msg.placement);
         } else if (msg.type === 'winner') {
             io.sockets.sockets.get(msg.socketId)?.emit('winner', msg.placement);
+        }
+        else if (msg.type === 'syncItemsTraps') {
+            if (!sessions[roomName]) sessions[roomName] = {};
+            const syncedItems = msg.items ? JSON.parse(JSON.stringify(msg.items)) : [];
+            const syncedTraps = msg.traps ? JSON.parse(JSON.stringify(msg.traps)) : [];
+            sessions[roomName].items = syncedItems;
+            sessions[roomName].traps = syncedTraps;
+            io.to(roomName).emit('syncItemsTraps', syncedItems, syncedTraps);
         }
         else if (msg.type === 'spawnItems'){
             //console.log("parentport spawn item:", msg.item)
