@@ -367,8 +367,9 @@ function handleInput(msg) {
             break;
         }
         case 'delete_user': {
+            console.log("delete user")
             const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-            if (aliveplayers[msg.socketId]) {
+            if (players[msg.socketId]) {
                 console.log("Alive players:", aliveplayers)
                 console.log("Socket ID:", msg.socketId)
                 console.log("delete user")
