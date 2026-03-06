@@ -37,9 +37,9 @@ export default function SpectatorRoom() {
             nav("/SpectateSession")
         }
 
-        const gameroom = (data) => {
-            console.log("Game room", data)
-            nav("/game", { state: data })
+        const gameroom = (roomName) => {
+            console.log("Game room", roomName)
+            nav("/game", { state: roomName })
         };
 
         socket.on("sessions", sessions);

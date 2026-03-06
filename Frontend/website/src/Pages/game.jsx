@@ -824,7 +824,7 @@ export default function Game() {
             
             return dx * dx + dy * dy <= smallRadius * smallRadius;
         }
-        if (zone.active) {
+        if (zone?.active) {
 
         const elapsed = Date.now() - zone.startTime;
         const progress = Math.min(elapsed / zone.duration, 1);   
@@ -851,8 +851,12 @@ export default function Game() {
         ctx.fill("evenodd");
         //console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
         
-        const state = isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius);
-        socket.emit('zone', {state, roomkey});  
+        const currentPlayerForZone = frontendPlayers[socket.id];
+        // Spectators do not participate in zone damage checks
+        if (!isSpectatingRef.current && currentPlayerForZone) {
+          const state = isBlue(currentPlayerForZone, centerW, centerH, smallRadius);
+          socket.emit('zone', { state, roomkey });
+        }
       }
     
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
@@ -1103,6 +1107,12 @@ export default function Game() {
        console.log("you won")
       setPlayercount(data)
       console.log(data)
+      // If spectator, return to spectator room instead of showing winner screen
+      if (isSpectatingRef.current) {
+        console.log("Spectator game ended, returning to spectator room");
+        nav("/spectator-room", { state: roomkey });
+        return;
+      }
         setwon(true);
        setdeath(true);
     }
