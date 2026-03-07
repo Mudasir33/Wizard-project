@@ -107,6 +107,9 @@ function startRoomWorker(roomName, initialState) {
             console.log("trap triggered:", msg.trapId, "victim:", msg.victimId)
             io.to(roomName).emit("trapTriggered", msg.trapId, msg.victimId)
         }
+        else if (msg.type === 'abilityUpdate'){
+            io.sockets.sockets.get(msg.pid)?.emit("abilityUpdate", msg.abilities)
+        }
      
 
     });

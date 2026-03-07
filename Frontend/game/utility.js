@@ -67,9 +67,9 @@ export const utility_list = {
     health:{
         name: "health",
         displayName: "Heal",
-        description: "Instantly restores 50 health",
+        description: "Restores 10 health per charge",
         duration: 1,
-        amount: 50,
+        amount: 10,
         instant: true,
         texture: health_potion,
         pickupTexture: health_potion

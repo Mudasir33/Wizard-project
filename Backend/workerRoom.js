@@ -16,6 +16,15 @@ const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'pu
 const spellkeys = ["fireball", "bouncing_shot"]
 const utilitykeys = ["haste", "health"]
 const trapkeys = ["bear_trap", "fire_trap"]
+const abilityCharges = {
+    fireball: 3,
+    bouncing_shot: 2,
+    haste: 2,
+    health: 3,
+    bear_trap: 5,
+    fire_trap: 3
+};
+
 const TILE_SIZE = 16;
 let spawn_x = 50;
 const basespeed = 150;
@@ -117,6 +126,7 @@ function handleInput(msg) {
                 alive: true,
                 id: index + 1,
                 speed: basespeed,
+                hasted: false,
                 sequenceNumber: 0,
                 dx: 0,
                 dy: 0,
@@ -158,6 +168,7 @@ function handleInput(msg) {
                 player.alive = true;
                 player.ready = false;
                 player.speed = basespeed;
+                player.hasted = false;
                 player.abilities = [];
                 player.lastSpellCast = 0;
                 player.effectSpeedMultiplier = 1;
@@ -247,7 +258,25 @@ function handleInput(msg) {
                 items.splice(idx, 1);
                 if (players[msg.socketId]) {
                     if (!players[msg.socketId].abilities) players[msg.socketId].abilities = [];
-                    players[msg.socketId].abilities.push(item.type);
+                    console.log("Before removal:", JSON.stringify(players[msg.socketId].abilities));
+                    console.log("Picking up:", item.key, "type:", item.type);
+
+                    const existingIdx = players[msg.socketId].abilities.findIndex(a => a.type === item.type);
+                    if (existingIdx !== -1) {
+                        console.log("Removing existing ability at index:", existingIdx);
+                        players[msg.socketId].abilities.splice(existingIdx, 1);
+                    }
+                    console.log("After removal:", JSON.stringify(players[msg.socketId].abilities));
+
+                    const charges = abilityCharges[item.key] || 1;
+                    players[msg.socketId].abilities.push({ key: item.key, type: item.type, charges: charges });
+                    console.log("After push:", JSON.stringify(players[msg.socketId].abilities));
+
+                    parentPort.postMessage({
+                        type: "abilityUpdate",
+                        pid: msg.socketId,
+                        abilities: players[msg.socketId].abilities
+                    });
                 }
             }
             break;
@@ -280,11 +309,31 @@ function handleInput(msg) {
         case 'spellCast': {
             const player = players[msg.socketId];
             if (!player || player.alive === false) return;
+            
             const now = Date.now();
             if (now - (player.lastSpellCast || 0) < spell_cd) {
                 return;
             }
             player.lastSpellCast = now;
+            const isMagicMissile = msg.spellName === 'magic_missile';
+            
+            if (!isMagicMissile) {
+                if (!player.abilities) return;
+                const spellAbility = player.abilities.find(a => a.key === msg.spellName && a.type === 'spell');
+                if (!spellAbility || spellAbility.charges <= 0) return;
+
+                spellAbility.charges--;
+                if (spellAbility.charges <= 0) {
+                    player.abilities = player.abilities.filter(a => a !== spellAbility);
+                }
+
+                parentPort.postMessage({
+                    type: "abilityUpdate",
+                    pid: msg.socketId,
+                    abilities: player.abilities
+                });
+            }
+            
             projectileId += 1;
 
             // Spell stats defined server-side
@@ -319,17 +368,36 @@ function handleInput(msg) {
         case 'util_use': {
             const player = players[msg.socketId];
             if (!player) return;
+
+            if (!player.abilities) return;
+            const utilAbility = player.abilities.find(a => a.key === msg.util && a.type === 'utility');
+            if (!utilAbility || utilAbility.charges <= 0) return;
+
+            utilAbility.charges--;
+            if (utilAbility.charges <= 0) {
+                player.abilities = player.abilities.filter(a => a !== utilAbility);
+            }
+
+            parentPort.postMessage({
+                type: "abilityUpdate",
+                pid: msg.socketId,
+                abilities: player.abilities
+            });
+            
             console.log("player speed:", player.speed)
             if (msg.util === "health") {
                 console.log("before:", player.health)
-                player.health += msg.amount;
+                player.health += 10;
                 if (player.health > 100) {
                     player.health = 100;
                 }
                 console.log("after:", player.health)
             }
             if (msg.util == "haste") {
-                player.speed = player.speed * 2;
+                if (!player.hasted) {
+                    player.hasted = true;
+                    player.speed = player.speed * 2;
+                }
             }
             break;
         }
@@ -338,6 +406,7 @@ function handleInput(msg) {
             const player = players[msg.socketId];
             if (!player) return;
             if (msg.util == "haste") {
+                player.hasted = false;
                 player.speed = basespeed;
             }
             break;
@@ -348,10 +417,19 @@ function handleInput(msg) {
             if (!player || !player.alive) return;
             if (!player.abilities || player.abilities.length === 0) return;
 
-            const trapIndex = player.abilities.findIndex(a => a === msg.trapKey);
-            if (trapIndex === -1) return;
+            const trapAbility = player.abilities.find(a => a.key === msg.trapKey && a.type === 'trap');
+            if (!trapAbility || trapAbility.charges <= 0) return;
 
-            player.abilities.splice(trapIndex, 1);
+            trapAbility.charges--;
+            if (trapAbility.charges <= 0) {
+                player.abilities = player.abilities.filter(a => a !== trapAbility);
+            }
+
+            parentPort.postMessage({
+                type: "abilityUpdate",
+                pid: msg.socketId,
+                abilities: player.abilities
+            });
 
             const stats = trapStats[msg.trapKey] || trapStats.bear_trap;
             const trap = {
@@ -540,7 +618,22 @@ function gameloop() {
                     item: item
                 })
                 if (!player.abilities) player.abilities = [];
-                player.abilities.push(item.key);
+
+                const existingIdx = player.abilities.findIndex(a => a.type === item.type);
+                if (existingIdx !== -1) {
+                    console.log("Replacing ability:", player.abilities[existingIdx].key, "with", item.key);
+                    player.abilities.splice(existingIdx, 1);
+                }
+
+                const chargesToAdd = abilityCharges[item.key] || 1;
+                player.abilities.push({ key: item.key, type: item.type, charges: chargesToAdd });
+                console.log("Player abilities after pickup:", JSON.stringify(player.abilities));
+
+                parentPort.postMessage({
+                    type: "abilityUpdate",
+                    pid: pid,
+                    abilities: player.abilities
+                });
             }
         }
     }

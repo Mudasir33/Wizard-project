@@ -51,15 +51,15 @@ class enviormentEffects {
                 let windY = 0;
 
                 if (this.x > 0) {
-                    windX = 0.4 + 0.3 * Math.random();
+                    windX = 0.15 + 0.1 * Math.random();
                 } else if (this.x < 0) {
-                    windX = -0.4 - 0.3 * Math.random();
+                    windX = -0.15 - 0.1 * Math.random();
                 }
 
                 if (this.y > 0) {
-                    windY = 0.6 + 0.4 * Math.random();
+                    windY = 0.2 + 0.15 * Math.random();
                 } else if (this.y < 0) {
-                    windY = -0.6 - 0.4 * Math.random();
+                    windY = -0.2 - 0.15 * Math.random();
                 }
 
                 const oldX = player.x;

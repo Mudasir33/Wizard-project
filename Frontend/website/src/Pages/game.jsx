@@ -26,7 +26,6 @@ export default function Game() {
   const itemRef = useRef([]);
   const itemSpriteRef = useRef(null);
 
-  // Equipped spell (null = default magic_missile)
   const equippedSpellRef = useRef(null);
  
   const button1IconRef = useRef(null);
@@ -94,8 +93,7 @@ export default function Game() {
       console.error("Failed to load tileset image:", wallsFloor);
     };
     tilesetImage.src = wallsFloor;
-    
-    // Create player overlay canvas (renders above trap GIFs)
+
     const playerOverlay = document.createElement('canvas');
     playerOverlay.width = canvas.width;
     playerOverlay.height = canvas.height;
@@ -104,7 +102,7 @@ export default function Game() {
     playerOverlay.style.position = 'absolute';
     playerOverlay.style.left = '0';
     playerOverlay.style.top = '0';
-    playerOverlay.style.zIndex = '10'; // Above trap GIFs (z-index 5)
+    playerOverlay.style.zIndex = '10';
     playerOverlay.style.pointerEvents = 'none';
     canvas.parentElement.appendChild(playerOverlay);
     const playerCtx = playerOverlay.getContext('2d');
@@ -254,6 +252,7 @@ export default function Game() {
           frontendPlayers[id].alive = backendPlayer.alive;
           frontendPlayers[id].dx = backendPlayer.dx;
           frontendPlayers[id].dy = backendPlayer.dy;
+          frontendPlayers[id].speed = backendPlayer.speed || 150;
           frontendPlayers[id].immobilizedUntil = backendPlayer.immobilizedUntil || 0;
 
           if (id === socket.id) {
@@ -502,15 +501,6 @@ export default function Game() {
              if(current_item.type === "spell"){
                     // Un-equip any existing spell when picking up new one
                     equippedSpellRef.current = null;
-                    button1IconRef.current = { key: current_item.key, image: current_item.image_pickup };
-                  }
-                  if(current_item.type ==="utility"){
-                    button3IconRef.current = { key: current_item.key, image: current_item.image_pickup };
-                    console.log("button3IconRef:", button3IconRef)
-                  }
-                  if(current_item.type === "trap"){
-                    button2IconRef.current = { key: current_item.key, image: current_item.image_pickup };
-                    console.log("button2IconRef:", button2IconRef)
                   }
         }
     }
@@ -544,6 +534,58 @@ export default function Game() {
       }
     }
     socket.on("trapTriggered", onTrapTriggered)
+
+    // Handle ability update (charges system)
+    const onAbilityUpdate = (abilities) => {
+      console.log("Ability update:", abilities);
+      
+      // Find spell ability
+      const spellAbility = abilities.find(a => a.type === 'spell');
+      if (spellAbility) {
+        const spellData = spell_list[spellAbility.key];
+        if (spellData) {
+          button1IconRef.current = { 
+            key: spellAbility.key, 
+            image: create_image(spellData.pickupTexture),
+            charges: spellAbility.charges 
+          };
+        }
+      } else {
+        button1IconRef.current = null;
+        equippedSpellRef.current = null;
+      }
+      
+      // Find trap ability
+      const trapAbility = abilities.find(a => a.type === 'trap');
+      if (trapAbility) {
+        const trapData = trap_list[trapAbility.key];
+        if (trapData) {
+          button2IconRef.current = { 
+            key: trapAbility.key, 
+            image: create_image(trapData.pickupTexture),
+            charges: trapAbility.charges 
+          };
+        }
+      } else {
+        button2IconRef.current = null;
+      }
+      
+      // Find utility ability
+      const utilAbility = abilities.find(a => a.type === 'utility');
+      if (utilAbility) {
+        const utilData = utility_list[utilAbility.key];
+        if (utilData) {
+          button3IconRef.current = { 
+            key: utilAbility.key, 
+            image: create_image(utilData.pickupTexture),
+            charges: utilAbility.charges 
+          };
+        }
+      } else {
+        button3IconRef.current = null;
+      }
+    }
+    socket.on("abilityUpdate", onAbilityUpdate)
 
     //####SPELLS#############################################################################################
     let direction = {
@@ -989,6 +1031,28 @@ export default function Game() {
 
           // Draw spell joystick and buttons (fixed to screen, not affected by camera)
           spellJoystickRef.current.draw(ctx);
+          
+          // Helper function to draw charge counter
+          const drawChargeCounter = (btn, charges) => {
+            if (charges === undefined || charges === null) return;
+            const counterSize = btn.r * 0.6;
+            const counterX = btn.x + btn.r - counterSize * 0.3;
+            const counterY = btn.y - btn.r + counterSize * 0.3;
+            
+            // Draw semi-transparent background circle
+            ctx.beginPath();
+            ctx.arc(counterX, counterY, counterSize, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fill();
+            
+            // Draw charge number
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${counterSize * 1.2}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(charges.toString(), counterX, counterY);
+          };
+          
           if (button1IconRef.current && button1IconRef.current.image) {
             const btn = buttonsRef.current.b1;
             const iconSize = btn.r * 2;
@@ -1001,6 +1065,7 @@ export default function Game() {
               iconSize
             );
             ctx.restore();
+            drawChargeCounter(btn, button1IconRef.current.charges);
           }
 
           if (button2IconRef.current && button2IconRef.current.image) {
@@ -1015,6 +1080,7 @@ export default function Game() {
               iconSize
             );
             ctx.restore();
+            drawChargeCounter(btn, button2IconRef.current.charges);
           }
 
           if (button3IconRef.current && button3IconRef.current.image) {
@@ -1029,6 +1095,7 @@ export default function Game() {
               iconSize
             );
             ctx.restore();
+            drawChargeCounter(btn, button3IconRef.current.charges);
           }
 
           // Draw spell info popup when holding button 1
@@ -1231,6 +1298,7 @@ export default function Game() {
       socket.off("removeItem", removeitem)
       socket.off("trapPlaced", onTrapPlaced)
       socket.off("trapTriggered", onTrapTriggered)
+      socket.off("abilityUpdate", onAbilityUpdate)
       socket.off("zoneUpdate");
 
       window.removeEventListener('keydown', handleKeyDown);
