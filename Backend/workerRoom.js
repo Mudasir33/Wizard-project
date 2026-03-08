@@ -59,6 +59,7 @@ const trapStats = {
 };
 
 const ZONE_DURATION = 240000;
+const MAX_GAME_DURATION = 300000;
 let zone = {
     active: false,
     startTime: 0,
@@ -882,6 +883,17 @@ setInterval(() => {
     if (!map || !mapwidth || !mapheight) return;
     enviormentEffects.upsertSpiderWeb(activeeffects, mapwidth, mapheight, TILE_SIZE);
 }, 12000);
+
+setInterval(() => {
+    if (ongoing && zone.startTime > 0) {
+        const elapsed = Date.now() - zone.startTime;
+        if (elapsed >= MAX_GAME_DURATION) {
+            console.log(`Game exceeded max duration (${MAX_GAME_DURATION}ms), auto-resetting room...`);
+            handleInput({ type: 'input', action: 'restart_game' });
+            parentPort.postMessage({ type: 'autoReset', room: roomName });
+        }
+    }
+}, 10000);
 
 function getRandomWalkableTile() {
    
