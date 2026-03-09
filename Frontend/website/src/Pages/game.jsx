@@ -9,6 +9,8 @@ import { Trap, trap_list } from "../../../game/traps.js";
 import { ExplosionManager } from "../../../game/spell_effects.js";
 import wallsFloor from "../../../../Assets/maps/walls_floor.png";
 import fireballPickup from "../../../../Assets/Spells/fireball_pickup.png";
+import windOverlayGif from "../../../../Assets/Images/windEffect.png";
+
 import Game_death from "./Game_Death.jsx";
 import { Utility, utility_list } from "../../../game/utility.js";
 import { use } from "react";
@@ -85,7 +87,11 @@ export default function Game() {
     ctx.imageSmoothingEnabled = false;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     const tilesetImage = new Image();
+    const windOverlayImage = new Image();
+    const WIND_TILE_SCALE = 8; //scale up wind effect
     let tilesetLoaded = false;
+    let windOverlayLoaded = false;
+    let windPattern = null;
     tilesetImage.onload = () => {
       tilesetLoaded = true;
     };
@@ -93,6 +99,25 @@ export default function Game() {
       console.error("Failed to load tileset image:", wallsFloor);
     };
     tilesetImage.src = wallsFloor;
+    windOverlayImage.onload = () => {
+      windOverlayLoaded = true;
+      // Upscale tiny source texture once, then reuse as a repeated pattern.
+      const patternTileCanvas = document.createElement('canvas');
+      const tileWidth = Math.max(1, Math.round(windOverlayImage.width * WIND_TILE_SCALE));
+      const tileHeight = Math.max(1, Math.round(windOverlayImage.height * WIND_TILE_SCALE));
+      patternTileCanvas.width = tileWidth;
+      patternTileCanvas.height = tileHeight;
+      const patternTileCtx = patternTileCanvas.getContext('2d');
+      patternTileCtx.imageSmoothingEnabled = false;
+      patternTileCtx.drawImage(windOverlayImage, 0, 0, tileWidth, tileHeight);
+
+      // Cache pattern once to avoid recreating it every frame.
+      windPattern = ctx.createPattern(patternTileCanvas, 'repeat');
+    };
+    windOverlayImage.onerror = () => {
+      console.error("Failed to load wind overlay image:", windOverlayGif);
+    };
+    windOverlayImage.src = windOverlayGif;
 
     const playerOverlay = document.createElement('canvas');
     playerOverlay.width = canvas.width;
@@ -415,6 +440,11 @@ export default function Game() {
       }
 
       return 1;
+    }
+
+    function getActiveWindEffect() {
+      const effects = effectsRef.current || [];
+      return effects.find((effect) => effect && effect.effect === "wind") || null;
     }
 
       function create_image(src){
@@ -1189,6 +1219,26 @@ export default function Game() {
         }
 
         ctx.drawImage(c,0,0);
+
+        const activeWind = getActiveWindEffect();
+        if (activeWind && windOverlayLoaded && windPattern) {
+          const cssWidth = canvas.width / scale;
+          const cssHeight = canvas.height / scale;
+          const windAngle = Math.atan2(activeWind.y || 0, activeWind.x || 0);
+          const coverSize = Math.hypot(cssWidth, cssHeight);
+
+          ctx.save();
+          ctx.translate(cssWidth / 2, cssHeight / 2);
+          ctx.rotate(windAngle);
+
+          // Fill only the minimum square needed to cover the rotated viewport.
+          ctx.fillStyle = windPattern;
+          ctx.globalAlpha = 0.44;
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.fillRect(-coverSize / 2, -coverSize / 2, coverSize, coverSize);
+
+          ctx.restore();
+        }
         
         // Draw spectator indicator
         if (isSpectatingRef.current) {

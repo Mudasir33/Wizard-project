@@ -1,12 +1,18 @@
+
 class enviormentEffects {
     static SPIDER_WEB_RADIUS = 150;
     static SPIDER_WEB_SLOW_MULTIPLIER = 0.5;
+    
+    
 
     constructor(x, y, effect, radius = 0) {
         this.x = x; // Position of the effect in the game world
         this.y = y; // Position of the effect in the game world
+
         this.effect = effect; // Type of effect (e.g., "wind", "spiderweb", "poison")
         this.radius = radius;
+
+       
 
     }
 
@@ -40,27 +46,17 @@ class enviormentEffects {
     applyeffect(players, effectType, collisionContext, collisionFn) {
 
         if (effectType === "wind") {
-            // Apply wind effect logic (e.g., push players in a certain direction)
+            // Use one shared wind vector so all players are pushed in the same direction.
+            const vecLength = Math.hypot(this.x, this.y) || 1;
+            const windForce = 0.26;
+            const windX = (this.x / vecLength) * windForce;
+            const windY = (this.y / vecLength) * windForce;
+
             for (const id in players) {
                 const player = players[id];
                 if (!player || player.alive === false) continue;
 
                 if (player.immobilizedUntil && Date.now() < player.immobilizedUntil) continue;
-
-                let windX = 0;
-                let windY = 0;
-
-                if (this.x > 0) {
-                    windX = 0.15 + 0.1 * Math.random();
-                } else if (this.x < 0) {
-                    windX = -0.15 - 0.1 * Math.random();
-                }
-
-                if (this.y > 0) {
-                    windY = 0.2 + 0.15 * Math.random();
-                } else if (this.y < 0) {
-                    windY = -0.2 - 0.15 * Math.random();
-                }
 
                 const oldX = player.x;
                 player.x += windX;

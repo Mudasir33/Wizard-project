@@ -850,14 +850,17 @@ function startWind() {
     windActive = true;
     windStartTime = now;
     currentWindDuration = randomRange(WIND_DURATION_MIN, WIND_DURATION_MAX);
+    const windAngle = Math.random() * Math.PI * 2;
+    const windDirectionX = Math.cos(windAngle);
+    const windDirectionY = Math.sin(windAngle);
     
     if (windscounter == 0) {
-        activeeffects[num] = new enviormentEffects(Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? -1 : 1, "wind");
+        activeeffects[num] = new enviormentEffects(windDirectionX, windDirectionY, "wind");
         windscounter++;
         console.log(`Wind started (duration: ${currentWindDuration}ms)`);
     } else if (activeeffects[0]) {
-        activeeffects[0].x = Math.random() < 0.5 ? -1 : 1;
-        activeeffects[0].y = Math.random() < 0.5 ? -1 : 1;
+        activeeffects[0].x = windDirectionX;
+        activeeffects[0].y = windDirectionY;
         activeeffects[0].effect = "wind";
         console.log(`Wind direction changed (duration: ${currentWindDuration}ms)`);
     }
