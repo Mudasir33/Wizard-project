@@ -92,6 +92,11 @@ export default function Game() {
     let tilesetLoaded = false;
     let windOverlayLoaded = false;
     let windPattern = null;
+    const windLayerCanvas = document.createElement('canvas');
+    const windLayerCtx = windLayerCanvas.getContext('2d');
+    let windLayerDirty = true;
+    let lastWindAngle = null;
+    let windWasActive = false;
     tilesetImage.onload = () => {
       tilesetLoaded = true;
     };
@@ -221,6 +226,10 @@ export default function Game() {
       playerOverlay.style.height = `${vh}px`;
       playerOverlay.width = Math.floor(vw * scale);
       playerOverlay.height = Math.floor(vh * scale);
+
+      windLayerCanvas.width = Math.floor(vw * scale);
+      windLayerCanvas.height = Math.floor(vh * scale);
+      windLayerDirty = true;
       
       layoutUI();
     }
@@ -449,6 +458,27 @@ export default function Game() {
     function getActiveWindEffect() {
       const effects = effectsRef.current || [];
       return effects.find((effect) => effect && effect.effect === "wind") || null;
+    }
+
+    function redrawWindLayer(windAngle) {
+      if (!windPattern || !windLayerCtx) return;
+
+      const cssWidth = windLayerCanvas.width / scale;
+      const cssHeight = windLayerCanvas.height / scale;
+      const coverSize = Math.hypot(cssWidth, cssHeight);
+
+      windLayerCtx.setTransform(1, 0, 0, 1, 0, 0);
+      windLayerCtx.clearRect(0, 0, windLayerCanvas.width, windLayerCanvas.height);
+      windLayerCtx.setTransform(scale, 0, 0, scale, 0, 0);
+
+      windLayerCtx.save();
+      windLayerCtx.translate(cssWidth / 2, cssHeight / 2);
+      windLayerCtx.rotate(windAngle);
+      windLayerCtx.fillStyle = windPattern;
+      windLayerCtx.globalAlpha = 0.44;
+      windLayerCtx.globalCompositeOperation = 'source-over';
+      windLayerCtx.fillRect(-coverSize / 2, -coverSize / 2, coverSize, coverSize);
+      windLayerCtx.restore();
     }
 
       function create_image(src){
@@ -1229,19 +1259,21 @@ export default function Game() {
           const cssWidth = canvas.width / scale;
           const cssHeight = canvas.height / scale;
           const windAngle = Math.atan2(activeWind.y || 0, activeWind.x || 0);
-          const coverSize = Math.hypot(cssWidth, cssHeight);
+          const angleChanged = lastWindAngle === null || Math.abs(windAngle - lastWindAngle) > 0.001;
+          if (!windWasActive || windLayerDirty || angleChanged) {
+            redrawWindLayer(windAngle);
+            windLayerDirty = false;
+            lastWindAngle = windAngle;
+          }
 
-          ctx.save();
-          ctx.translate(cssWidth / 2, cssHeight / 2);
-          ctx.rotate(windAngle);
-
-          // Fill only the minimum square needed to cover the rotated viewport.
-          ctx.fillStyle = windPattern;
-          ctx.globalAlpha = 0.44;
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.fillRect(-coverSize / 2, -coverSize / 2, coverSize, coverSize);
-
-          ctx.restore();
+          windWasActive = true;
+          ctx.drawImage(windLayerCanvas, 0, 0, canvas.width, canvas.height, 0, 0, cssWidth, cssHeight);
+        } else {
+          if (windWasActive) {
+            windWasActive = false;
+            windLayerDirty = true;
+            lastWindAngle = null;
+          }
         }
         
         // Draw spectator indicator
