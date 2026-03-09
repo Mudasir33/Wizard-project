@@ -20,7 +20,7 @@ const io = new Server(server, {
     perMessageDeflate: {
         threshold: 256, // Only compress messages larger than 256 bytes
         zlibDeflateOptions: {
-            level: 9, // Maximum compression
+            level: 1, // Minimal compression
         },
         zlibInflateOptions: {},
     }
@@ -29,6 +29,15 @@ const io = new Server(server, {
 let sessions = {};
 const roomWorkers = {};
 const colors = ['blue', 'red', 'green', 'yellow', 'brown', 'white', 'black', 'purple', 'gray', 'rainbow'];
+
+function getSessionsForBroadcast() {
+    const result = {};
+    for (const r in sessions) {
+        const { map, ...rest } = sessions[r];
+        result[r] = rest;
+    }
+    return result;
+}
 
 function startRoomWorker(roomName, initialState) {
     const worker = new Worker(path.join(__dirname, 'workerRoom.js'), {
@@ -39,7 +48,6 @@ function startRoomWorker(roomName, initialState) {
             if (!sessions[roomName]) sessions[roomName] = {};
             sessions[roomName].players = msg.state.players;
             sessions[roomName].move = msg.state.move;
-            sessions[roomName].map = msg.state.map || null;
             sessions[roomName].effects = msg.state.effects || [];
             sessions[roomName].items = msg.state.items || [];
             sessions[roomName].traps = msg.state.traps || [];
@@ -52,7 +60,7 @@ function startRoomWorker(roomName, initialState) {
             //io.to(roomName).emit('spawnItems', msg.state.items, roomName);
             io.to(roomName).emit('zoneUpdate', msg.state.zone, roomName);
             if(!msg.state.ongoing || ongoing_change){
-                io.emit("sessions", sessions)
+                io.emit("sessions", getSessionsForBroadcast())
             }
        
 
@@ -252,7 +260,7 @@ async function startServer() {
             
             console.log('Spectator joined room:', room, 'Total spectators:', Object.keys(sessions[room].spectators).length);
             socket.emit('joined', room);
-            io.emit('sessions', sessions);
+            io.emit('sessions', getSessionsForBroadcast());
         };
 
         socket.on('join', join);
@@ -279,7 +287,7 @@ async function startServer() {
             if (roomWorkers[room]) {
                 roomWorkers[room].postMessage({ type: 'input', action: 'room_leave', socketId: socket.id });
                 socket.emit("leftroom", room)
-                io.emit('sessions', sessions);
+                io.emit('sessions', getSessionsForBroadcast());
             }
         };
 

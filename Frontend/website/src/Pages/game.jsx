@@ -1006,22 +1006,10 @@ export default function Game() {
           projectile.draw(ctx, scaleup_constant);
         }
 
-        //checks if player is hit by zone 
-        function isBlue(player, centerW, centerH, smallRadius){
-           //ctx.rect((frontendPlayers[socket.id].x+(frontendPlayers[socket.id].width/2)  )*scaleup_constant,(frontendPlayers[socket.id].y )*scaleup_constant,50,50);
-            const px = (player.x +(player.width/2)) *scaleup_constant ;
-            const py = (player.y +(player.height/2)) * scaleup_constant;
-
-            const dx = px - centerW;
-            const dy = py - centerH;
-            //console.log("HIT: ",  dx * dx + dy * dy <= smallRadius * smallRadius);
-            
-            return dx * dx + dy * dy <= smallRadius * smallRadius;
-        }
         if (zone?.active) {
 
         const elapsed = Date.now() - zone.startTime;
-        const progress = Math.min(elapsed / zone.duration, 1);   
+        const progress = Math.min(elapsed / zone.duration, 1);
         ctx.fillStyle = "rgba(0, 0, 255, 0.5)";
 
         const mapW = width * TILE_SIZE * scaleup_constant;
@@ -1041,16 +1029,8 @@ export default function Game() {
         if (smallRadius > 0) {
         // Circle (safe zone)
         ctx.arc(centerW, centerH, smallRadius, 0, Math.PI * 2);
-        } 
-        ctx.fill("evenodd");
-        //console.log( isBlue(frontendPlayers[socket.id],centerW, centerH, smallRadius));
-        
-        const currentPlayerForZone = frontendPlayers[socket.id];
-        // Spectators do not participate in zone damage checks
-        if (!isSpectatingRef.current && currentPlayerForZone) {
-          const state = isBlue(currentPlayerForZone, centerW, centerH, smallRadius);
-          socket.emit('zone', { state, roomkey });
         }
+        ctx.fill("evenodd");
       }
     
         // Update and draw explosions (pass canvas, camera focus position for screen positioning)
