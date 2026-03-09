@@ -282,9 +282,13 @@ export default function Game() {
 
           if (id === socket.id) {
             // Update existing player position
-            const lastBackendInputIndex = playerInputs.findIndex((input) => {
-              return backendPlayer.sequenceNumber === input.sequenceNumber;
-            });
+            let lastBackendInputIndex = -1;
+            for (let i = playerInputs.length - 1; i >= 0; i--) {
+              if (playerInputs[i].sequenceNumber <= backendPlayer.sequenceNumber) {
+                lastBackendInputIndex = i;
+                break;
+              }
+            }
 
             if (lastBackendInputIndex > -1) playerInputs.splice(0, lastBackendInputIndex + 1);
 
@@ -698,21 +702,21 @@ export default function Game() {
       if (frontendPlayers[socket.id]) {
         const player = frontendPlayers[socket.id];
         const speed = player.speed * getSpiderWebSpeedMultiplier(player);
-        player.x += dx * speed * 0.015;
-        player.y += dy * speed * 0.015;
-        if (wallCollison(obj, player) == false || wallCollison(obj, player) == undefined){
-          player.x += (dx * speed * 0.015) ;
-          player.y += (dy * speed * 0.015);
+        const moveX = dx * speed * 0.015;
+        const moveY = dy * speed * 0.015;
 
+        // Match server movement exactly: resolve X and Y independently.
+        const oldX = player.x;
+        player.x += moveX;
+        if (obj && wallCollison(obj, player)) {
+          player.x = oldX;
+        }
 
-            }else{
-                //if collision is true from input the characters will move away from the wall
-                if (0.1 <= dx && dx <= 1|| 0.1 <= dy && dy<= 1 || -1 <= dx && dx <= -0.1|| -1 <= dy && dy <= -0.1) {
-                   player.x += (-dx * speed * 0.015); // reverse the input in x coordinate x
-                   player.y += (-dy * speed * 0.015); // reverse the input in x coordinate y
-
-                }
-              }
+        const oldY = player.y;
+        player.y += moveY;
+        if (obj && wallCollison(obj, player)) {
+          player.y = oldY;
+        }
 
         // Send combined movement input to server (always, even when 0, to stop movement)
         player.dx = dx;
@@ -721,8 +725,8 @@ export default function Game() {
         // Store input for server reconciliation
         sequenceNumberRef.current++;
         playerInputs.push({
-          dx: dx * speed * 0.015,
-          dy: dy * speed * 0.015,
+          dx: moveX,
+          dy: moveY,
           sequenceNumber: sequenceNumberRef.current
         });
         
