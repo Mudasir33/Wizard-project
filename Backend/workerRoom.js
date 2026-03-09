@@ -249,7 +249,7 @@ function handleInput(msg) {
             playerInput[msg.socketId].dy = msg.dy;
             players[msg.socketId].dx = msg.dx;
             players[msg.socketId].dy = msg.dy;
-            break;
+            return;
         }
 
         case 'pickupItem': {
@@ -811,6 +811,37 @@ function gameloop() {
             }
         }
 
+        if (wallHit && !playerHit && projectile.aoeRadius > 0) {
+            const aoeRadius = projectile.aoeRadius;
+            const damage = projectile.damage || 10;
+
+            for (const pid in players) {
+                if (pid === projectile.playerId || players[pid].alive === false) continue;
+
+                const player = players[pid];
+                const distX = player.x - projectile.x;
+                const distY = player.y - projectile.y;
+                const distance = Math.sqrt(distX * distX + distY * distY);
+
+                if (distance <= aoeRadius) {
+                    const damageMult = Math.max(0.5, 1 - (distance / aoeRadius) * 0.5);
+                    const finalDamage = Math.round(damage * damageMult);
+
+                    players[pid].health -= finalDamage;
+
+                    if (players[pid].health <= 0 && players[pid].alive === true) {
+                        players[pid].alive = false;
+                        const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                        parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
+                        if (aliveplayers.length === 1) {
+                            const winner = aliveplayers[0];
+                            players[winner].alive = false;
+                            parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                        }
+                    }
+                }
+            }
+        }
         if (wallHit || playerHit) {
             if (projectile.bouncesRemaining > 0) {
                 projectile.bouncesRemaining--;
@@ -985,7 +1016,7 @@ setInterval(() => {
         });
         lastState = { ...currentState };
     }
-}, 150);
+}, 50);
 
 parentPort.on('message', (msg) => {
     if (msg.type === 'input') {

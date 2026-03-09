@@ -18,7 +18,7 @@ const io = new Server(server, {
         methods: ['GET', 'POST'],
     },
     perMessageDeflate: {
-        threshold: 512, // Only compress messages larger than 512 bytes
+        threshold: 256, // Only compress messages larger than 256 bytes
         zlibDeflateOptions: {
             level: 9, // Maximum compression
         },
@@ -37,25 +37,19 @@ function startRoomWorker(roomName, initialState) {
     worker.on('message', (msg) => {
         if (msg.type === 'update') {
             if (!sessions[roomName]) sessions[roomName] = {};
-            const clonedPlayers = JSON.parse(JSON.stringify(msg.state.players));
-            const clonedMove = JSON.parse(JSON.stringify(msg.state.move));
-            const clonedMap = msg.state.map ? JSON.parse(JSON.stringify(msg.state.map)) : null;
-            const clonedEffects = msg.state.effects ? JSON.parse(JSON.stringify(msg.state.effects)) : [];
-            const clonedItems = msg.state.items ? JSON.parse(JSON.stringify(msg.state.items)) : [];
-            const clonedTraps = msg.state.traps ? JSON.parse(JSON.stringify(msg.state.traps)) : [];
-            sessions[roomName].players = clonedPlayers;
-            sessions[roomName].move = clonedMove;
-            sessions[roomName].map = clonedMap;
-            sessions[roomName].effects = clonedEffects;
-            sessions[roomName].items = clonedItems;
-            sessions[roomName].traps = clonedTraps;
+            sessions[roomName].players = msg.state.players;
+            sessions[roomName].move = msg.state.move;
+            sessions[roomName].map = msg.state.map || null;
+            sessions[roomName].effects = msg.state.effects || [];
+            sessions[roomName].items = msg.state.items || [];
+            sessions[roomName].traps = msg.state.traps || [];
             sessions[roomName].numready = msg.state.numready;
             let ongoing_change = ( sessions[roomName].ongoing !== msg.state.ongoing )
             sessions[roomName].ongoing = msg.state.ongoing;
-            io.to(roomName).emit('updatePlayers', clonedPlayers, roomName);
-            io.to(roomName).emit('effectsUpdate', clonedEffects, roomName);
+            io.to(roomName).emit('updatePlayers', msg.state.players, roomName);
+            io.to(roomName).emit('effectsUpdate', msg.state.effects || [], roomName);
             io.to(roomName).emit('spectatorList', sessions[roomName].spectators || {});
-            //io.to(roomName).emit('spawnItems', clonedItems, roomName);
+            //io.to(roomName).emit('spawnItems', msg.state.items, roomName);
             io.to(roomName).emit('zoneUpdate', msg.state.zone, roomName);
             if(!msg.state.ongoing || ongoing_change){
                 io.emit("sessions", sessions)
