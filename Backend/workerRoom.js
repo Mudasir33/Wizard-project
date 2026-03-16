@@ -43,7 +43,6 @@ let num = 0;
 let windActive = false;
 let windStartTime = 0;
 let currentWindDuration = 0;
-let dirty = false;
 
 const WIND_DURATION_MIN = 3000;
 const WIND_DURATION_MAX = 7000;
@@ -59,7 +58,7 @@ const trapStats = {
     fire_trap: { damage: 5, triggerRadius: 16, type: 'dot', dotInterval: 500, burnDuration: 3000, activeDuration: 4500}
 };
 
-const ZONE_DURATION = 240000;
+const ZONE_DURATION = 150000;
 const MAX_GAME_DURATION = 300000;
 let zone = {
     active: false,
@@ -283,6 +282,31 @@ function handleInput(msg) {
             }
             break;
         }
+        case 'zone': {
+            const player = players[msg.socketId];
+            if (!player || !player.alive) return;
+
+            // Only damage if client says they are inside the zone
+            if (msg.state === false && ongoing === true) {
+
+
+                if (player.health <= 0 && player.alive) {
+                    player.alive = false;
+
+                    const aliveplayers = Object.keys(players).filter(id => players[id].alive);
+                    parentPort.postMessage({ type: 'death', socketId: msg.socketId, placement: aliveplayers.length + 1 });
+
+                    if (aliveplayers.length === 1) {
+                        const winner = aliveplayers[0];
+                        players[winner].alive = false;
+                        parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
+                    }
+
+                }
+                player.health -= 0.2;
+            }
+            break;
+        }
         case 'spellCast': {
             const player = players[msg.socketId];
             if (!player || player.alive === false) return;
@@ -473,7 +497,26 @@ function handleInput(msg) {
         default:
             break;
     }
-    dirty = true;
+
+    parentPort.postMessage({
+        type: 'update', state: {
+            id: roomName,
+            players,
+            move: playerInput,
+            backendProjectiles,
+            map,
+            effects: serializeEffects(),
+            items,
+            traps,
+            numready,
+            ongoing,
+            zone: {
+                active: zone.active,
+                startTime: zone.startTime,
+                duration: zone.duration
+            }
+        }
+    });
 }
 
 function gameloop() {
@@ -556,41 +599,7 @@ function gameloop() {
             }
         }
     }
-
-    // Zone damage (server-authoritative)
-    if (zone.active && ongoing && mapwidth && mapheight) {
-        const elapsed = Date.now() - zone.startTime;
-        const progress = Math.min(elapsed / zone.duration, 1);
-        const zoneCenterX = mapwidth * TILE_SIZE / 2;
-        const zoneCenterY = mapheight * TILE_SIZE / 2;
-        const zoneRadius = mapwidth * TILE_SIZE * (1 - progress);
-
-        for (const pid in players) {
-            const player = players[pid];
-            if (!player.alive) continue;
-
-            const px = player.x + 8;
-            const py = player.y + 8;
-            const dx = px - zoneCenterX;
-            const dy = py - zoneCenterY;
-
-            if (dx * dx + dy * dy > zoneRadius * zoneRadius) {
-                player.health -= 0.18;
-
-                if (player.health <= 0 && player.alive) {
-                    player.alive = false;
-                    const aliveplayers = Object.keys(players).filter(id => players[id].alive);
-                    parentPort.postMessage({ type: 'death', socketId: pid, placement: aliveplayers.length + 1 });
-                    if (aliveplayers.length === 1) {
-                        const winner = aliveplayers[0];
-                        players[winner].alive = false;
-                        parentPort.postMessage({ type: 'winner', socketId: winner, placement: 1 });
-                    }
-                }
-            }
-        }
-    }
-
+    
     for (const pid in players) {
         const player = players[pid];
         if (!player.alive) continue;
@@ -962,27 +971,51 @@ setInterval(() => {
     gameloop();
 }, 15);
 
-// Network state broadcast: always during game, on-change in lobby
+// Network updates throttled to every 150ms (projectiles handled separately)
+let lastState = null;
 setInterval(() => {
-    if (!ongoing && !dirty) return;
-    dirty = false;
-    parentPort.postMessage({
-        type: 'update', state: {
-            id: roomName,
-            players,
-            move: playerInput,
-            effects: serializeEffects(),
-            items,
-            traps,
-            numready,
-            ongoing,
-            zone: {
-                active: zone.active,
-                startTime: zone.startTime,
-                duration: zone.duration
+    const currentState = {
+        players,
+        move: playerInput,
+        map,
+        items,
+        traps,
+        numready,
+        ongoing
+    };
+    let changed = false;
+    if (!lastState) {
+        changed = true;
+    } else {
+        for (let key of Object.keys(currentState)) {
+            if (currentState[key] !== lastState[key]) {
+                changed = true;
+                break;
             }
         }
-    });
+    }
+    if (changed) {
+        parentPort.postMessage({
+            type: 'update', state: {
+                id: roomName,
+                players,
+                move: playerInput,
+                backendProjectiles,
+                map,
+                effects: serializeEffects(),
+                items,
+                traps,
+                numready,
+                ongoing,
+                zone: {
+                    active: zone.active,
+                    startTime: zone.startTime,
+                    duration: zone.duration
+                }
+            }
+        });
+        lastState = { ...currentState };
+    }
 }, 50);
 
 parentPort.on('message', (msg) => {

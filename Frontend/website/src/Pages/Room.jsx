@@ -142,7 +142,6 @@ return(
     </table>
     <button onClick={() => leaveroom(roomkey)}> Leave room</button>
     <button onClick={() => pressed_ready(roomkey)}> Ready</button>
-    <button onClick={() =>startGame(roomkey)}> Start Game</button>
     
 </div>
 
