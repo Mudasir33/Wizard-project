@@ -9,6 +9,8 @@
     "build": "npm run build:web && npm run sync:web",
     "start": "node Backend/gameserver.js",
     "dev:web": "npm --prefix Frontend/website run dev",
+    "start-backend": "node Backend/gameserver.js",
+    "start-frontend": "npm --prefix Frontend/website run preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
